@@ -1,0 +1,4 @@
+<launch>
+    <node name="atak_bridge_node" pkg="atak_bridge" type="atak_bridge_node" >
+    </node>
+</launch>
