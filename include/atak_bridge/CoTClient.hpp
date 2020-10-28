@@ -32,7 +32,7 @@ namespace AIDTR {
 		CoTClient(boost::asio::io_service& io_service,
 			const boost::asio::ip::address& multicast_address,
 			const short multicast_port = 30001,
-			const char* uid = "AIDTR Gator 1",
+			const char* uid = "DCIST Warthog01",
 			const char* type = "a-f-G-E-V",
 			const char* how = "m-f",
 			bool simulation = true
@@ -123,7 +123,7 @@ namespace AIDTR {
 
 		}
 
-		static std::tuple<xercesc_3_2::DOMDocument*, xercesc_3_2::DOMElement *, xercesc_3_2::DOMElement *> createCoTDocument(const char* uid = "AIDTR Gator 1",
+		static std::tuple<xercesc_3_2::DOMDocument*, xercesc_3_2::DOMElement *, xercesc_3_2::DOMElement *> createCoTDocument(const char* uid = "DCIST Warthog01",
 			const char* type = "a-f-G-E-V",
 			const char* how = "m-f",
 			bool simulation = true)
