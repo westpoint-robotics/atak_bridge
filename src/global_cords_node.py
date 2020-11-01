@@ -29,7 +29,7 @@ def odom_cb(data):
 
 def main():
     global current_odom
-    pub = rospy.Publisher('fix', NavSatFix, queue_size=10)
+    pub = rospy.Publisher('atak_fix', NavSatFix, queue_size=10)
     rospy.init_node('global_coords', anonymous=True)
     rospy.Subscriber("/warty/odom", Odometry, odom_cb)
     msg = NavSatFix()

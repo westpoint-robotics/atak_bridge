@@ -5,7 +5,7 @@ import rospy
 from sensor_msgs.msg import NavSatFix
 
 def talker():
-    pub = rospy.Publisher('fix', NavSatFix, queue_size=10)
+    pub = rospy.Publisher('/atak/atak_fix', NavSatFix, queue_size=10)
     rospy.init_node('gps_sim', anonymous=True)
     msg = NavSatFix()
     msg.latitude = 41.393850 # Soccer field

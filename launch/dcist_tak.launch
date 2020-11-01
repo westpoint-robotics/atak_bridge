@@ -1,0 +1,11 @@
+<launch>
+    <node name="dcist_cots" pkg="atak_bridge" type="dcist_cots.py" ns="atak" output="screen">
+        <param name="callsign" value="WARTY02" />
+        <param name="team_name" value="Ground Robots" />
+        <param name="team_role" value="Autonomous Agent" />
+        <param name="tak_ip" value="10.13.0.10" />
+        <param name="tak_port" value="8088" />
+    </node>
+    
+    <!-- <node name="global_cords" pkg="atak_bridge" type="global_cords_node.py" /> -->
+</launch>
