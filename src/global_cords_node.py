@@ -31,7 +31,7 @@ def main():
     global current_odom
     pub = rospy.Publisher('atak_fix', NavSatFix, queue_size=10)
     rospy.init_node('global_coords', anonymous=True)
-    rospy.Subscriber("/warty/odom", Odometry, odom_cb)
+    rospy.Subscriber("odom", Odometry, odom_cb)
     msg = NavSatFix()
     msg.latitude = 41.393850 # Soccer field
     msg.longitude = -73.953674
