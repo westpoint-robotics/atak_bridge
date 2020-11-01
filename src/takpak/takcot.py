@@ -12,7 +12,8 @@ import socket
 class Error(Exception):
     """Base class for exceptions in this module."""
     pass
-
+    
+# TODO investigate why this class exists, python socket module should be able to do this
 class SocketError(Error):
 
     """Exception raised for errors in the input.
@@ -21,9 +22,10 @@ class SocketError(Error):
         expression -- input expression in which the error occurred
         message -- explanation of the error
     """
-
-    def __init__(self, expression, message):
-        self.expression = expression
+    # TODO DML made below changes to fix broken exception handling in the code
+    #def __init__(self, expression, message):
+    #    self.expression = expression        
+    def __init__(self, message):
         self.message = message
 
 class takcot():
@@ -31,8 +33,6 @@ class takcot():
     Connects, Sends and receives properly formed CoT's to TAK servers
     Tested on FTS, but should work on TAK
     """
-
-
 
     def __init__(self, logger=None):
         # use existing logger
@@ -93,7 +93,7 @@ class takcot():
 
         except socket.timeout:
             self.logger.error(__name__ +  " Socket Timeout")
-            raise SocketError(__name__ + "Socket Timeout")
+            raise SocketError(__name__ + "Socket Timeout") # The sole argument to raise indicates the exception to be raised
             
         except:
             self.logger.warning(__name__ + " Send data failed")

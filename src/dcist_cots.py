@@ -36,7 +36,8 @@ def update_location_cb(data):
     global current_location
     current_location = data
 
-# Setup Logging TODO Does not work.
+# Setup Logging TODO Does not work. 
+# FIXME the logging system used in takpak does not work with ROS.
 # logger = logging.getLogger(f'rosout.{__name__}') # Needed to enable the loggers in takcot modules with ros
 
 # Setup ATAK identity of this node 
@@ -77,13 +78,14 @@ count = 1 # used to keep connection alive
 pub = rospy.Publisher('atak_tgt', Vector3Stamped, queue_size=10)
 rospy.init_node('atak_targets', anonymous=True)
 rospy.Subscriber("atak_fix", NavSatFix, update_location_cb)
-rate = rospy.Rate(20) # 10hz
+loop_hz = 1
+rate = rospy.Rate(loop_hz) # The rate of the loop is no faster than then the readtimeout.
 while not rospy.is_shutdown():
 
     # Listen to the server and get message sent
     cotresponse =''
-    try:
-        cotresponse = takserver.readcot(readtimeout=1)
+    try: # TODO Use a non-blocking read of the socket
+        cotresponse = takserver.readcot(readtimeout=1) # This is a blocking read for 1 second.
         cot_xml = cotresponse[0]
         #rospy.loginfo("%s" %(cot_xml))
     except:
@@ -108,10 +110,9 @@ while not rospy.is_shutdown():
     except:
         rospy.logdebug("----- Recieved ATAK Message and it is not a move to command -----")
 
-
-    # Send a keep-alive once a second    
     count += 1
-    if count > 20:
+    # TODO Determine if this needed, if we are sending pose updates periodically we may not need this.
+    if count > loop_hz: # do these actions once second.
         rospy.logdebug("Keep alive sent -----------------------------------------")
         takserver.send(mkcot.mkcot(cot_ping=True, 
             cot_type="t", 
@@ -120,24 +121,24 @@ while not rospy.is_shutdown():
             cot_id=my_uid, 
             team_name=my_team_name, 
             team_role=my_team_role)) 
-        count = 1  
+        count = 0  
         
-         
     # ============================  
-    # Send the current position to the TAK Server        
+    # Send the current position to the TAK Server    
+    # TODO Send this at appropriate rate. Currently it is tied to the readtimeout.    
     takserver.flush()  # flush the xmls the server sends
     takserver.send(mkcot.mkcot(cot_identity="friend", 
         cot_stale = 1, 
         #cot_dimension="land-unit",
-        cot_type="a-f-G-M-F-Q", 
+        #cot_type="a-f-G-M-F-Q",
+        cot_type="a-f-G-U-C", 
         cot_how="m-g", 
         cot_callsign=my_callsign, 
         cot_id=my_uid, 
         team_name=my_team_name, 
         team_role=my_team_role,
         cot_lat=current_location.latitude,
-        cot_lon=current_location.longitude ))        
-
+        cot_lon=current_location.longitude ))  
     rate.sleep()
 
 
