@@ -24,9 +24,7 @@ from takpak.takcot import takcot
 
 # Setup ROS node
 pub = rospy.Publisher('atak_tgt', Vector3Stamped, queue_size=10)
-rospy.init_node('atak_targets', anonymous=True)
-rospack = rospkg.RosPack()
-pack_dir = rospack.get_path('rospy_tutorials')
+rospy.init_node('dcist_cots', anonymous=True)
 
 # Setup ROS callback to keep an updated position of the robot
 current_location = NavSatFix()
@@ -35,6 +33,8 @@ current_location.latitude = -73.953674
 def update_location_cb(data):
     global current_location
     current_location = data
+    
+rospy.Subscriber("atak_fix", NavSatFix, update_location_cb)
 
 # Setup Logging TODO Does not work. 
 # FIXME the logging system used in takpak does not work with ROS.
@@ -75,10 +75,8 @@ target_msg = Vector3Stamped()
 
 # Setup and run the main while loop
 count = 1 # used to keep connection alive
-pub = rospy.Publisher('atak_tgt', Vector3Stamped, queue_size=10)
-rospy.init_node('atak_targets', anonymous=True)
-rospy.Subscriber("atak_fix", NavSatFix, update_location_cb)
-loop_hz = 1
+
+loop_hz = 20
 rate = rospy.Rate(loop_hz) # The rate of the loop is no faster than then the readtimeout.
 while not rospy.is_shutdown():
 
@@ -87,7 +85,7 @@ while not rospy.is_shutdown():
     try: # TODO Use a non-blocking read of the socket
         cotresponse = takserver.readcot(readtimeout=1) # This is a blocking read for 1 second.
         cot_xml = cotresponse[0]
-        #rospy.loginfo("%s" %(cot_xml))
+        #rospy.loginfo("COT XML:\n%s" %(cot_xml))
     except:
         rospy.logdebug("Read Cot failed: %s" % (sys.exc_info()[0]))
         #continue        
@@ -102,17 +100,17 @@ while not rospy.is_shutdown():
         if ('99999' == target_num):
             lat = tree.find("./point").attrib['lat']
             lon = tree.find("./point").attrib['lon']
-            rospy.loginfo("----- Recieved ATAK Message from UID: %s, saying move to %s, %s" %(this_uid,lat,lon))
             target_msg.header.stamp = rospy.Time.now()
             target_msg.vector.x = float(lat)
             target_msg.vector.y = float(lon)
             pub.publish(target_msg)            
-    except:
-        rospy.logdebug("----- Recieved ATAK Message and it is not a move to command -----")
+            rospy.loginfo("----- Recieved ATAK Message from UID: %s, saying move to %s, %s" %(this_uid,lat,lon))
+    except Exception, e:
+        rospy.logdebug("----- Recieved ATAK Message and it is not a move to command -----"+ str(e))
 
     count += 1
     # TODO Determine if this needed, if we are sending pose updates periodically we may not need this.
-    if count > loop_hz: # do these actions once second.
+    if count > 20: # do these actions once second.
         rospy.logdebug("Keep alive sent -----------------------------------------")
         takserver.send(mkcot.mkcot(cot_ping=True, 
             cot_type="t", 
@@ -126,7 +124,7 @@ while not rospy.is_shutdown():
     # ============================  
     # Send the current position to the TAK Server    
     # TODO Send this at appropriate rate. Currently it is tied to the readtimeout.    
-    takserver.flush()  # flush the xmls the server sends
+    #takserver.flush()  # flush the xmls the server sends
     takserver.send(mkcot.mkcot(cot_identity="friend", 
         cot_stale = 1, 
         #cot_dimension="land-unit",

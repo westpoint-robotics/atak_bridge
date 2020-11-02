@@ -7,5 +7,9 @@
         <param name="tak_port" value="8088" />
     </node>
     
-    <!-- <node name="global_cords" pkg="atak_bridge" type="global_cords_node.py" /> -->
+    <node name="global_cords" pkg="atak_bridge" type="global_cords_node.py" ns="atak" output="screen"/>
+    <node name="goto_target" pkg="atak_bridge" type="goto_target.py" ns="atak" output="screen"/>
+   
+    
+    
 </launch>

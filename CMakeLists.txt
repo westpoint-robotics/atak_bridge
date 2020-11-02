@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.0.2)
 project(atak_bridge)
 
+set(CMAKE_BUILD_TYPE Release)
+
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
 
@@ -55,6 +57,7 @@ catkin_package(
 ## Build ##
 ###########
 
+
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
@@ -71,4 +74,27 @@ target_link_libraries(${PROJECT_NAME}_node
     ${catkin_LIBRARIES}
     xerces-c
 )
+
+install(PROGRAMS
+    src/contact_pub.py
+    src/dcist_cots.py
+    src/fix_pub.py
+    src/global_cords_node.py
+    src/goto_target.py
+    src/LatLongUTMconversion.py
+    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+
+install(PROGRAMS
+    src/takpak/mkcot.py
+    src/takpak/takcot.py
+    src/takpak/__init__.py
+    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}/takpak
+)
+## Mark other files for installation (e.g. launch and bag files, etc.)
+install(
+  DIRECTORY launch
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+)
+
 
