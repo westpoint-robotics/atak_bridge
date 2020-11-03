@@ -34,10 +34,12 @@ def target_cb(data):
     msg.goal_id.id = "ATAK GOTO"
     msg.goal.region_center.header.stamp = data.header.stamp
     msg.goal.region_center.header.frame_id = "warty/map"
-    msg.goal.region_center.pose.position.x = tgt_pos_y
-    msg.goal.region_center.pose.position.y = tgt_utm_y
-    msg.goal.radius = 0.75
-    msg.goal.angle_threshold = 3.14 # Do not care which direction it faces
+    msg.goal.region_center.pose.position.x = tgt_pos_x
+    msg.goal.region_center.pose.position.y = tgt_pos_y
+    msg.goal.region_center.pose.orientation.z = 0.0985357937255
+    msg.goal.region_center.pose.orientation.w = 0.995133507302
+    msg.goal.radius = 3.75
+    msg.goal.angle_threshold = 3.108 
     pub.publish(msg)
     
 rospy.Subscriber("atak_tgt", Vector3Stamped, target_cb)
