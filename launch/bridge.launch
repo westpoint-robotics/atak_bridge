@@ -1,4 +1,0 @@
-<launch>
-    <node name="atak_bridge_node" pkg="atak_bridge" type="atak_bridge_node" />
-    <node name="global_cords" pkg="atak_bridge" type="global_cords_node.py" />
-</launch>

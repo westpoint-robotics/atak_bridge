@@ -3,6 +3,7 @@ project(atak_bridge)
 
 set(CMAKE_BUILD_TYPE Release)
 
+# TODO update the cmake file and package.xml file to reflect dependencies and remove any reference to AI TF CPP code.
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
 
@@ -60,20 +61,20 @@ catkin_package(
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
-include_directories(
-  include
-  ${catkin_INCLUDE_DIRS}
-)
+#include_directories(
+#  include
+#  ${catkin_INCLUDE_DIRS}
+#)
 
-add_executable(${PROJECT_NAME}_node
-    src/ROSCOTBridge.cpp
-    src/XmlMessagingBase.cpp
-) 
+#add_executable(${PROJECT_NAME}_node
+#    src/ROSCOTBridge.cpp
+#    src/XmlMessagingBase.cpp
+#) 
 
-target_link_libraries(${PROJECT_NAME}_node
-    ${catkin_LIBRARIES}
-    xerces-c
-)
+#target_link_libraries(${PROJECT_NAME}_node
+#    ${catkin_LIBRARIES}
+#    xerces-c
+#)
 
 install(PROGRAMS
     src/contact_pub.py
