@@ -6,8 +6,11 @@ from geometry_msgs.msg import Vector3Stamped
 from arl_nav_msgs.msg import GotoRegionActionGoal
 from LatLongUTMconversion import LLtoUTM, UTMtoLL
 
-start_latitude = 41.393850 # Soccer field
-start_longitude = -73.953674
+# start_latitude = 41.393850 # Soccer field
+# start_longitude = -73.953674
+# start_altitude = 10
+start_latitude = 41.39058 # Rivercourts
+start_longitude = -73.95323
 start_altitude = 10
 #UTM Zone = 18T
 #UTM Easting = 587472.34
@@ -18,22 +21,22 @@ start_altitude = 10
 start_utm_alt = start_altitude
 
 rospy.init_node('atak_target', anonymous=True)
-pub = rospy.Publisher('/warty/goto_region/goal', GotoRegionActionGoal, queue_size=10)
+pub = rospy.Publisher('/husky/goto_region/goal', GotoRegionActionGoal, queue_size=10)
 
 def target_cb(data):
     (zone,tgt_utm_e,tgt_utm_n) = LLtoUTM(23, data.vector.x, data.vector.y)
-    tgt_pos_x = tgt_utm_e - start_utm_e
-    tgt_pos_y = tgt_utm_n - start_utm_n
+    tgt_pos_x = -(tgt_utm_e - start_utm_e)
+    tgt_pos_y = -(tgt_utm_n - start_utm_n)
     rospy.loginfo('Target of: %f, %f' %(tgt_pos_x,tgt_pos_y))
-    tgt_utm_x = tgt_pos_x + start_utm_e
-    tgt_utm_y = tgt_pos_y + start_utm_n
+    #tgt_utm_x = tgt_pos_x + start_utm_e
+    #tgt_utm_y = tgt_pos_y + start_utm_n
 
     msg = GotoRegionActionGoal()
     msg.header.stamp = rospy.Time.now()
     msg.goal_id.stamp = rospy.Time.now()
     msg.goal_id.id = "ATAK GOTO"
     msg.goal.region_center.header.stamp = data.header.stamp
-    msg.goal.region_center.header.frame_id = "warty/map"
+    msg.goal.region_center.header.frame_id = "husky/map"
     msg.goal.region_center.pose.position.x = tgt_pos_x
     msg.goal.region_center.pose.position.y = tgt_pos_y
     msg.goal.region_center.pose.orientation.z = 0.0985357937255
