@@ -7,8 +7,11 @@ from nav_msgs.msg import Odometry
 from LatLongUTMconversion import LLtoUTM, UTMtoLL
 
 
-start_latitude = 41.393850 # Soccer field
-start_longitude = -73.953674
+# start_latitude = 41.393850 # Soccer field
+# start_longitude = -73.953674
+# start_altitude = 10
+start_latitude = 41.39058 # Rivercourts
+start_longitude = -73.95323
 start_altitude = 10
 #UTM Zone = 18T
 #UTM Easting = 587472.34
@@ -31,17 +34,17 @@ def main():
     global current_odom
     pub = rospy.Publisher('atak_fix', NavSatFix, queue_size=10)
     rospy.init_node('global_coords', anonymous=True)
-    rospy.Subscriber("/warty/odom", Odometry, odom_cb)
+    rospy.Subscriber("/husky/odom", Odometry, odom_cb)
     msg = NavSatFix()
-    msg.latitude = 41.393850 # Soccer field
-    msg.longitude = -73.953674
-    msg.altitude = 10
+    msg.latitude = start_latitude
+    msg.longitude = start_longitude
+    msg.altitude = start_altitude
     
     rate = rospy.Rate(2) 
     while not rospy.is_shutdown():
         msg.header.stamp = rospy.Time.now()
-        crnt_utm_x = current_odom.pose.pose.position.x + start_utm_x
-        crnt_utm_y = current_odom.pose.pose.position.y + start_utm_y
+        crnt_utm_x = start_utm_x - current_odom.pose.pose.position.x
+        crnt_utm_y = start_utm_y - current_odom.pose.pose.position.y 
         (msg.latitude,msg.longitude) = UTMtoLL(23, crnt_utm_y, crnt_utm_x, zone) # 23 is WGS-84. 
         
         #msg.status.status = 0
