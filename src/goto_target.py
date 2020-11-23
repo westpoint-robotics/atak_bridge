@@ -35,8 +35,8 @@ pub = rospy.Publisher(goal_topic, GotoRegionActionGoal, queue_size=10)
 
 def target_cb(data):
     (zone,tgt_utm_e,tgt_utm_n) = LLtoUTM(23, data.vector.x, data.vector.y)
-    tgt_pos_x = -(tgt_utm_e - start_utm_e)
-    tgt_pos_y = -(tgt_utm_n - start_utm_n)
+    tgt_pos_x = (tgt_utm_e - start_utm_e)
+    tgt_pos_y = (tgt_utm_n - start_utm_n)
     rospy.loginfo('Target of: %f, %f' %(tgt_pos_x,tgt_pos_y))
 
     msg = GotoRegionActionGoal()
