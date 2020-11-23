@@ -1,10 +1,11 @@
 #!/usr/bin/env python
-
 import rospy
 
 from geometry_msgs.msg import Vector3Stamped
 from arl_nav_msgs.msg import GotoRegionActionGoal
 from LatLongUTMconversion import LLtoUTM, UTMtoLL
+
+rospy.init_node('atak_target', anonymous=True)
 
 # start_latitude = 41.393850 # Soccer field
 # start_longitude = -73.953674
@@ -12,24 +13,31 @@ from LatLongUTMconversion import LLtoUTM, UTMtoLL
 start_latitude = 41.39058 # Rivercourts
 start_longitude = -73.95323
 start_altitude = 10
+start_heading = 0 # This is due west
+robot_name = "warty"
 #UTM Zone = 18T
 #UTM Easting = 587472.34
 #UTM Northing = 4583007.81
 #LLtoUTM(23, 41.393850,-73.953674)
 #UTMtoLL(23, nrt, est, '18T')
+start_latitude = rospy.get_param('~start_latitude', start_latitude)
+start_longitude = rospy.get_param('~start_longitude', start_longitude) 
+start_altitude = rospy.get_param('~start_altitude', start_altitude)
+start_heading = rospy.get_param('~start_heading', start_heading)
+robot_name = rospy.get_param('~name', "warty")
+goal_topic="/"+robot_name+"/goto_region/goal"
+rospy.loginfo('goto_target node is subscribing to the topic of: %s' %(goal_topic))
+
 (zone,start_utm_e,start_utm_n) = LLtoUTM(23, start_latitude, start_longitude)
 start_utm_alt = start_altitude
 
-rospy.init_node('atak_target', anonymous=True)
-pub = rospy.Publisher('/husky/goto_region/goal', GotoRegionActionGoal, queue_size=10)
+pub = rospy.Publisher(goal_topic, GotoRegionActionGoal, queue_size=10)
 
 def target_cb(data):
     (zone,tgt_utm_e,tgt_utm_n) = LLtoUTM(23, data.vector.x, data.vector.y)
     tgt_pos_x = -(tgt_utm_e - start_utm_e)
     tgt_pos_y = -(tgt_utm_n - start_utm_n)
     rospy.loginfo('Target of: %f, %f' %(tgt_pos_x,tgt_pos_y))
-    #tgt_utm_x = tgt_pos_x + start_utm_e
-    #tgt_utm_y = tgt_pos_y + start_utm_n
 
     msg = GotoRegionActionGoal()
     msg.header.stamp = rospy.Time.now()
@@ -47,7 +55,7 @@ def target_cb(data):
     
 rospy.Subscriber("atak_tgt", Vector3Stamped, target_cb)
 
-rospy.spin() # Just spin here and react to recieving a target from the subscriber
+rospy.spin() # Just spin here and react to receiving a target from the subscriber
 
 
         
@@ -85,7 +93,4 @@ arl_nav_msgs/GotoRegionGoal goal
       float32 x
       float32 y
       float32 z
-
-
-
 '''

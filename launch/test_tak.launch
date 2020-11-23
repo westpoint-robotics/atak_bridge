@@ -1,9 +1,9 @@
 <launch>
 
-  <arg name="name" default="husky"/>
+  <arg name="name" default="warty"/>
 
   <!-- Settings for ATAK communications -->
-  <arg name="callsign" default="Husky01" 
+  <arg name="callsign" default="Warty01" 
     doc="The callsign used by the robot on the ATAK system"/>
   <arg name="team_name" default="Ground Robots"  
     doc="The Team Name used by the robot on the ATAK system"/>
@@ -50,6 +50,8 @@
     </node>
 
   </group> 
+  
+  
 
 
 </launch>
