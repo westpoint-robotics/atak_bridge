@@ -15,30 +15,28 @@ import logging
 
 import rospy
 import rospkg
+import tf
+from visualization_msgs.msg import MarkerArray
+from geometry_msgs.msg import PoseStamped
 from geometry_msgs.msg import Vector3Stamped
-from sensor_msgs.msg import NavSatFix
+from arl_nav_msgs.msg import GotoRegionActionGoal # Used to publish target location as a goto goal
 
 from takpak.mkcot import mkcot
 from takpak.takcot import takcot
 
+from LatLongUTMconversion import LLtoUTM, UTMtoLL
+
+zone='18T'
 
 # Setup ROS node
-pub = rospy.Publisher('atak_tgt', Vector3Stamped, queue_size=10)
 rospy.init_node('dcist_cots', anonymous=True)
 
-# Setup ROS callback to keep an updated position of the robot
-current_location = NavSatFix()
-current_location.latitude = 41.393850
-current_location.latitude = -73.953674
-def update_location_cb(data):
-    global current_location
-    current_location = data
-    
-rospy.Subscriber("atak_fix", NavSatFix, update_location_cb)
+robot_name = rospy.get_param('~name', "warty")
+goal_topic="/"+robot_name+"/goto_region/goal"
+pub = rospy.Publisher(goal_topic, GotoRegionActionGoal, queue_size=10)
 
-# Setup Logging TODO Does not work. 
-# FIXME the logging system used in takpak does not work with ROS.
-# logger = logging.getLogger(f'rosout.{__name__}') # Needed to enable the loggers in takcot modules with ros
+tf1_listener = tf.TransformListener()
+tf1_listener.waitForTransform("husky/map", "utm", rospy.Time(0), rospy.Duration(5.0))
 
 # Setup ATAK identity of this node 
 my_callsign = rospy.get_param('~callsign', 'default_callsign')
@@ -70,6 +68,41 @@ tree = ET.fromstring(my_xml)
 xml_callsign = tree.find("./detail/contact").attrib['callsign']
 rospy.loginfo("SUCCESSFUL Conection with the server. The server believes my callsign is: %s" %(xml_callsign))
 
+
+def object_cb(data):
+    global takserver
+    global zone
+    for item in data.markers:
+        if item.ns == "window": 
+            obj_pose_stamped = PoseStamped()
+            obj_pose_stamped.header = item.header  
+            obj_pose_stamped.header.stamp = rospy.Time.now()                       
+            obj_pose_stamped.pose = item.pose
+            obj_pose = tf1_listener.transformPose("utm", obj_pose_stamped)
+            #print(str(item.header.stamp.secs)+ " " + item.ns + " " + str(item.pose.position.x) + " " + str(item.pose.position.y) + " " + str(item.pose.position.z))
+            
+            (obj_latitude,obj_longitude) = UTMtoLL(23, obj_pose.pose.position.y, obj_pose.pose.position.x, zone) # 23 is WGS-84.          
+            #print(str(item.header.stamp.secs)+ " " + item.ns + " " + str(obj_pose.pose.position.x) + " " + str(obj_pose.pose.position.y) + " " + str(obj_pose.pose.position.z) + " " + str(obj_latitude) + " " + str(obj_longitude))
+            takserver.send(mkcot.mkcot(cot_identity="neutral", 
+                cot_stale = 1, 
+                #cot_dimensionlon="land-unit",
+                cot_type="a-f-G-M-F-Q",
+                #cot_type="a-f-G-U-C", 
+                cot_how="m-g", 
+                cot_callsign=item.ns, 
+                cot_id="object", 
+                team_name="deteczone='18T'tor", 
+                team_role="obj detector",
+                cot_lat=obj_latitude,
+                cot_lon=obj_longitude ))              
+
+    
+rospy.Subscriber("/husky/worldmodel_rviz/object_markers", MarkerArray, object_cb)
+
+# Setup Logging TODO Does not work. 
+# FIXME the logging system used in takpak does not work with ROS.
+# logger = logging.getLogger(f'rosout.{__name__}') # Needed to enable the loggers in takcot modules with ros
+
 # Setup ROS message to publish
 target_msg = Vector3Stamped()
 
@@ -97,14 +130,32 @@ while not rospy.is_shutdown():
         this_uid = tree.get("uid")   
         fiveline = tree.find("./detail/fiveline")
         target_num = fiveline.attrib['fiveline_target_number']
-        if ('99999' == target_num):
+        if ('99999' == target_num): # TODO change to publish a go to goal message
             lat = tree.find("./point").attrib['lat']
             lon = tree.find("./point").attrib['lon']
-            target_msg.header.stamp = rospy.Time.now()
-            target_msg.vector.x = float(lat)
-            target_msg.vector.y = float(lon)
-            pub.publish(target_msg)            
-            rospy.loginfo("----- Recieved ATAK Message from UID: %s, saying move to %s, %s" %(this_uid,lat,lon))
+            (zone,crnt_utm_e,crnt_utm_n) = LLtoUTM(23, float(lat), float(lon))
+            crnt_pose_stamped = PoseStamped()
+            crnt_pose_stamped.header.stamp = rospy.Time.now()   
+            crnt_pose_stamped.header.frame_id = 'utm'         
+            crnt_pose_stamped.pose.position.x = crnt_utm_e                    
+            crnt_pose_stamped.pose.position.y = crnt_utm_n 
+            crnt_pose = tf1_listener.transformPose("husky/map", crnt_pose_stamped)
+            tgt_pos_x = crnt_pose.pose.position.x
+            tgt_pos_y = crnt_pose.pose.position.y            
+            msg = GotoRegionActionGoal()
+            msg.header.stamp = rospy.Time.now()
+            msg.goal_id.stamp = rospy.Time.now()
+            msg.goal_id.id = "ATAK GOTO"
+            msg.goal.region_center.header.stamp = crnt_pose_stamped.header.stamp
+            msg.goal.region_center.header.frame_id = "husky/map"
+            msg.goal.region_center.pose.position.x = tgt_pos_x
+            msg.goal.region_center.pose.position.y = tgt_pos_y
+            msg.goal.region_center.pose.orientation.z = 0.0985357937255
+            msg.goal.region_center.pose.orientation.w = 0.995133507302
+            msg.goal.radius = 3.75
+            msg.goal.angle_threshold = 3.108    
+            pub.publish(msg)           
+            rospy.loginfo("----- Recieved ATAK Message from UID: %s, saying move to lat/lon of %s, %s and map location %s, %s" %(this_uid,lat,lon, tgt_pos_x, tgt_pos_y))
     except Exception, e:
         rospy.logdebug("----- Recieved ATAK Message and it is not a move to command -----"+ str(e))
 
@@ -121,10 +172,17 @@ while not rospy.is_shutdown():
             team_role=my_team_role)) 
         count = 0  
         
+        
+    # Get currnet position in Map frame        
+    crnt_pose = tf1_listener.lookupTransform('utm', 'husky/base_link', rospy.Time(0))
+    #([0.17887300879040938, -0.048116981667806785, 0.014201157337402178], [-0.002688032953270503, 0.0011190697035904009, -0.11106424779955845, 0.9938089630419717])
+    (crnt_latitude,crnt_longitude) = UTMtoLL(23, crnt_pose[0][1], crnt_pose[0][0], zone) # 23 is WGS-84.  
+    
+                    
     # ============================  
     # Send the current position to the TAK Server    
     # TODO Send this at appropriate rate. Currently it is tied to the readtimeout.    
-    #takserver.flush()  # flush the xmls the server sends
+    #takserver.flush()  # flush the xmls the server sends    
     takserver.send(mkcot.mkcot(cot_identity="friend", 
         cot_stale = 1, 
         #cot_dimension="land-unit",
@@ -135,10 +193,9 @@ while not rospy.is_shutdown():
         cot_id=my_uid, 
         team_name=my_team_name, 
         team_role=my_team_role,
-        cot_lat=current_location.latitude,
-        cot_lon=current_location.longitude ))  
+        cot_lat=crnt_latitude,
+        cot_lon=crnt_longitude ))  
     rate.sleep()
-
 
 # Conduct a clean shutdown upon exiting main while loop.    
 takserver.flush()  # flush the xmls the server sends
