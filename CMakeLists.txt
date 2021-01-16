@@ -83,6 +83,7 @@ install(PROGRAMS
     src/global_cords_node.py
     src/goto_target.py
     src/utm_2_map.py
+    src/obj_2_atak_uav.py
     src/LatLongUTMconversion.py
     DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )

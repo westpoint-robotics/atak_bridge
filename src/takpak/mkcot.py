@@ -166,9 +166,9 @@ class mkcot:
         if iconpath:
             icon_attr = {
                 #"iconsetpath": '34ae1613-9645-4222-a9d2-e5f243dea2865/Military/soldier6.png'
-                #"iconsetpath": '34ae1613-9645-4222-a9d2-e5f243dea2865/Military/soldier6.png'
+                "iconsetpath": '34ae1613-9645-4222-a9d2-e5f243dea2865/Military/soldier6.png'
                 #"iconsetpath": 'f7f71666-8b28-4b57-9fbb-e38e61d33b79/Google/placemark_circle.png'
-                "iconsetpath": iconpath
+#                "iconsetpath": iconpath
             }
         else:
             icon_attr = None

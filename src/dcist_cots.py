@@ -45,10 +45,10 @@ if rospy.has_param('~uid'):
     my_uid = rospy.get_param('~uid')
 else:
     my_uid = str(socket.getfqdn()) + "-" + str(uuid.uuid1())[-12:]
-my_team_name = rospy.get_param('team_name', 'Default Team')   
-my_team_role = rospy.get_param('team_role', 'Default Team Role')
-tak_ip = rospy.get_param('tak_ip', '127.0.0.1') 
-tak_port = rospy.get_param('tak_port', '8088') 
+my_team_name = rospy.get_param('~team_name', 'Default Team')   
+my_team_role = rospy.get_param('~team_role', 'Default Team Role')
+tak_ip = rospy.get_param('~tak_ip', '127.0.0.1') 
+tak_port = rospy.get_param('~tak_port', '8088') 
 rospy.loginfo("my_callsign=%s, my_uid =%s, my_team_name =%s, my_uid =%s" %(my_callsign,my_uid,my_team_name,my_team_role))
 
 # Start ATAK client

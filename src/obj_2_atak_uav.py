@@ -30,6 +30,8 @@ zone='18T'
 # Setup ROS node
 rospy.init_node(node_name, anonymous=True)
 
+robot_name = rospy.get_param('~name', "warty")
+
 tf1_listener = tf.TransformListener()   
 tf1_listener.waitForTransform("uav1/map", "utm", rospy.Time(0), rospy.Duration(5.0)) 
 
@@ -39,10 +41,10 @@ if rospy.has_param('~uid'):
     my_uid = rospy.get_param('~uid')
 else:
     my_uid = str(socket.getfqdn()) + "-" + str(uuid.uuid1())[-12:]
-my_team_name = rospy.get_param('team_name', 'Team Air')   
-my_team_role = rospy.get_param('team_role', 'Recon Role')
-tak_ip = rospy.get_param('tak_ip', '10.13.0.10') 
-tak_port = rospy.get_param('tak_port', '8088') 
+my_team_name = rospy.get_param('~team_name', 'Default Team')   
+my_team_role = rospy.get_param('~team_role', 'Default Team Role')
+tak_ip = rospy.get_param('~tak_ip', '127.0.0.1') 
+tak_port = rospy.get_param('~tak_port', '8088') 
 rospy.loginfo("my_callsign=%s, my_uid =%s, my_team_name =%s, my_uid =%s" %(my_callsign,my_uid,my_team_name,my_team_role))
 
 # Start ATAK client
@@ -76,17 +78,17 @@ def object_location_cb(data):
                 obj_pose_utm_stamped.header = detection.header                        
                 obj_pose_utm_stamped.pose = result.pose.pose 
                 obj_pose_utm = tf1_listener.transformPose("utm", obj_pose_utm_stamped)
-                rospy.loginfo('ID: %s, Score: %.2f, Location: %.3f, %.3f, %.3f UTM: %.3f, %.3f, %.3f' %
-                        (result.id,result.score, r_pose.x, r_pose.y,r_pose.z, 
-                        obj_pose_utm.pose.position.x, obj_pose_utm.pose.position.y,obj_pose_utm.pose.position.z))
                 (obj_latitude,obj_longitude) = UTMtoLL(23, obj_pose_utm.pose.position.y, obj_pose_utm.pose.position.x, zone) # 23 is WGS-84. 
+                rospy.loginfo('ID: %s, Score: %.2f, Location: %.3f, %.3f, %.3f -- LatLong: %.5f, %.5f -- UTM: %.3f, %.3f, %.3f' %
+                        (result.id,result.score, r_pose.x, r_pose.y,r_pose.z, obj_latitude, obj_longitude,
+                        obj_pose_utm.pose.position.x, obj_pose_utm.pose.position.y,obj_pose_utm.pose.position.z))
                 takserver.send(mkcot.mkcot(cot_identity="neutral", 
                     cot_stale = 1, 
                     #cot_dimensionlon="land-unit",
                     cot_type="a-f-G-M-F-Q",
                     #cot_type="a-f-G-U-C", 
                     cot_how="m-g", 
-                    cot_callsign=item.ns, 
+                    #cot_callsign=item.ns, 
                     cot_id="object", 
                     team_name="deteczone='18T'tor", 
                     team_role="obj detector",
@@ -94,15 +96,25 @@ def object_location_cb(data):
                     cot_lon=obj_longitude ))                       
 
 def main():
-    rospy.Subscriber("/uav1/detection_localization/detections/out/local", Detection2DArray, object_location_cb)            
+    rospy.Subscriber("/uav1/detection_localization/detections/out/local", Detection2DArray, object_location_cb)    
     rate = rospy.Rate(20) # The rate of the loop is no faster than then the readtimeout.
-    while not rospy.is_shutdown(): 
+    while not rospy.is_shutdown():
         rate.sleep()
 
     # Conduct a clean shutdown upon exiting main while loop.    
     takserver.flush()  # flush the xmls the server sends
     rospy.loginfo("Closing TAK Server")
     takserver.close()   
+    
+if __name__ == '__main__':
+    try:
+        main()
+    except rospy.ROSInterruptException:
+        pass    
+    
+    
+    
+    
 
 
 '''
