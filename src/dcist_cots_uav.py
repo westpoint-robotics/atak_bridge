@@ -34,7 +34,7 @@ zone='18T'
 rospy.init_node(node_name, anonymous=True)
 
 robot_name = rospy.get_param('~name', "warty")
-goal_topic="/"+robot_name+"/goto_region/goal"
+goal_topic="/"+robot_name+"/nav_goal/2d"
 pub = rospy.Publisher(goal_topic, PoseStamped, queue_size=10)
 
 # Setup ATAK identity of this node 
@@ -52,7 +52,7 @@ global_frame = rospy.get_param('~global_frame', 'utm')
 rospy.loginfo("my_callsign= %s, my_uid= %s, my_team_name= %s, my_uid= %s, my_baselink= %s" %(my_callsign,my_uid,my_team_name,my_team_role,baselink_frame))
 
 tf1_listener = tf.TransformListener()
-tf1_listener.waitForTransform(global_frame, baselink_frame, rospy.Time(0), rospy.Duration(5.0))
+tf1_listener.waitForTransform(global_frame, baselink_frame, rospy.Time(0), rospy.Duration(35.0))
 
 # Start ATAK client
 rospy.loginfo("============ Node: %s is connecting to  TAK Server ===============", node_name)
@@ -93,33 +93,34 @@ while not rospy.is_shutdown():
         #continue        
 
     # Parse a received message and if it is a move to command publish a move to message
-    try:    
-        tree = ET.fromstring(cot_xml)
-        # Get the UID
-        this_uid = tree.get("uid")   
-        fiveline = tree.find("./detail/fiveline")
-        rospy.loginfo("fiveline:%s" %fiveline)
-        target_num = fiveline.attrib['fiveline_target_number']
-        # If this is a goto location then publish it as a go to goal.
-        
-        # Assumes utm is the global frame.
-        if ('99999' == target_num):
-            lat = tree.find("./point").attrib['lat']
-            lon = tree.find("./point").attrib['lon']
-            (zone,crnt_utm_e,crnt_utm_n) = LLtoUTM(23, float(lat), float(lon))
-            goal_pose_stamped = PoseStamped()
-            goal_pose_stamped.header.stamp = rospy.Time.now()  
-            rospy.loginfo("target_num:%s" %target_num) 
-            goal_pose_stamped.header.frame_id = global_frame   
-            rospy.loginfo("lat:%s" %lat)      
-            goal_pose_stamped.pose.position.x = crnt_utm_e                    
-            goal_pose_stamped.pose.position.y = crnt_utm_n
-            rospy.loginfo("lat:%s" %lat)
-            msg = goal_pose_stamped   
-            pub.publish(msg)           
-            rospy.loginfo("----- Recieved ATAK Message from UID: %s, saying move to lat/lon of %s, %s and map location %s, %s" %(this_uid,lat,lon, crnt_utm_e, crnt_utm_n))
-    except Exception, e:
-        rospy.logwarn("----- Recieved ATAK Message and it is not a move to command -----"+ str(e))
+    
+    if (len(cot_xml)>1):
+        try:    
+            tree = ET.fromstring(cot_xml)
+            # Get the UID
+            this_uid = tree.get("uid")   
+            fiveline = tree.find("./detail/fiveline")
+            #rospy.loginfo("fiveline:%s" %fiveline)
+            target_num = fiveline.attrib['fiveline_target_number']
+            # If this is a goto location then publish it as a go to goal.
+            
+            # Assumes utm is the global frame.
+            if ('99999' == target_num):
+                lat = tree.find("./point").attrib['lat']
+                lon = tree.find("./point").attrib['lon']
+                (zone,crnt_utm_e,crnt_utm_n) = LLtoUTM(23, float(lat), float(lon))
+                goal_pose_stamped = PoseStamped()
+                goal_pose_stamped.header.stamp = rospy.Time.now()  
+                goal_pose_stamped.header.frame_id = 'utm'   
+                goal_pose_stamped.pose.position.x = crnt_utm_e                    
+                goal_pose_stamped.pose.position.y = crnt_utm_n 
+                msg = tf1_listener.transformPose(global_frame, goal_pose_stamped)           
+                msg.pose.position.z = 5.0
+                
+                pub.publish(msg)           
+                rospy.loginfo("----- Recieved ATAK Message from UID: %s, saying move to lat/lon of %s, %s and map location %s, %s" %(this_uid,lat,lon, crnt_utm_e, crnt_utm_n))
+        except Exception, e:
+            rospy.logwarn("----- Recieved ATAK Message and it is not a move to command -----"+ str(e))
 
     # ===============================================      
     # Ping the server at 1Hz to keep alive connection 

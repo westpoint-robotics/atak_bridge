@@ -10,7 +10,7 @@
   <arg name="tak_port" default="8088" doc="The Port number on the ATAK server to connect to"/>
   <arg name="odom_topic" default="/uav1/mavros/global_position/local" doc="The odometry topic that declares the robot location"/>
   <arg name="baselink_frame" default="/uav1/base_link" doc="The base link frame of the robot"/>
-  <arg name="global_frame" default="utm" doc="The global coordinate frame used to send global locations to ATAK"/>
+  <arg name="global_frame" default="uav1/odom" doc="The global coordinate frame used to send global locations to ATAK"/>
 
 <!-- 
 41.389974, -73.955016 37 degrees magnetic TH1136 
