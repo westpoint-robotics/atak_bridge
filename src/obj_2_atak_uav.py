@@ -85,7 +85,7 @@ def object_location_cb(data):
                 takserver.send(mkcot.mkcot(cot_identity="neutral", 
                     cot_stale = 1, 
                     #cot_dimensionlon="land-unit",
-                    cot_type="a-f-G-M-F-Q",
+                    cot_type="a-h-G-M-F-Q",
                     #cot_type="a-f-G-U-C", 
                     cot_how="m-g", 
                     #cot_callsign=item.ns, 

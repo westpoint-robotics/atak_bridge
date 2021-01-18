@@ -54,6 +54,113 @@ my_call = 'DEFAULT/PLEASE_SET'
 class mkcot:
 
     @staticmethod
+    def mkcot_tgt(
+         cot_stale=5 # Time in seconds before message is stale
+        , cot_how="m-g"
+        , cot_lat=41.390638 , cot_lon=-73.953104, cot_hae=9999999
+        , cot_ce=9999999.0 , cot_le=9999999.0
+        , cot_type="a-h-g" # for atom, hostile and ground
+        , cot_id= my_uid # used to id a single CoT, could be sender UID, or event
+        , cot_callsign= my_call
+        , cot_parent_callsign = "DefaultRobot"
+        , color=""
+        , sender_uid=""
+        ):
+    
+        # Get the current time and convert to CoT XML
+        now_xml = strftime(datetime_strfmt,gmtime())
+
+        # Add the stale time to the current time and convert to CoT XML
+        stale=gmtime(time() + (60 * cot_stale))
+        stale_xml = strftime(datetime_strfmt,stale)
+
+        event_attr = {
+            "version": "2.0",
+            "uid": cot_id, # uid of the CoT, sender or event 
+            "time": now_xml,
+            "start": now_xml,
+            "stale": stale_xml,
+            "how": cot_how, 
+            "type": cot_type
+        }
+
+        point_attr = {
+            "lat": str(cot_lat),
+            "lon":  str(cot_lon),
+            "hae": str(cot_hae),
+            "ce": str(cot_ce),
+            "le": str(cot_le)
+        }
+        #-----------------------------------------------------
+        # now the sub-elements for the detail block
+        precision_attr = {"altsrc": "GPS","geopointsrc": "GPS"}
+        status_attr = {"readiness": "true"}        
+        archive_attr = {}  
+        contact_attr = {"callsign": cot_callsign}  
+        link_attr = {
+            "uid": sender_uid,
+            "type": "a-f-G-U-C",
+            "relation": "p-p",
+            "production_time": now_xml,
+            "parent_callsign": cot_parent_callsign
+        }    
+        color_attr = { "argb": '-1' }
+        altNinelines_attr = {}
+        fiveline_attr = {
+            "fiveline_custom_fmark": '', 
+		    "fiveline_AC_line_1_uid": '', 
+		    "line_dci": '', 
+		    "fiveline_target_number": "99999", 
+		    "fiveline_line_1_MOA": "BOT", 
+		    "line_7_safetyzoneenabled": "false", 
+		    "line_7": "0", 
+		    "fivelineremarks": '', 
+		    "fiveline_custom_tdesc": '', 
+		    "fiveline_line_1_type": "1", 
+		    "show_aim": "false", 
+		    "fiveline_fdc_callsign": '', 
+		    "remarks_fahWidth": "30", 
+		    "fiveline_custom_floc": '', 
+		    "designatorUID": sender_uid,
+		    "fiveline_suppression_type": "IMMEDIATE SUPPRESSION",
+		    "fiveline_suppression_tloc": "Number",
+		    "remarks_fahOffsetAngle": "25",
+		    "show_stat": "true",
+		    "fiveline_target_description": "Custom",
+		    "fiveline_friendly_mark": "NO MARK",
+		    "line_7_other": ''
+        }
+
+        # Now assemble the element tree
+        cot = et.Element('event', attrib=event_attr)
+        et.SubElement(cot,'point', attrib=point_attr)
+
+        # Create Detail element, save the handle
+        detail = et.SubElement(cot, 'detail')
+
+        # Now add some subelements to detail
+        et.SubElement(detail,'precisionlocation', attrib=precision_attr)
+        et.SubElement(detail,'status', attrib=status_attr)
+        et.SubElement(detail,'archive', attrib=archive_attr)
+        et.SubElement(detail,'contact', attrib=contact_attr)
+        et.SubElement(detail,'link', attrib=link_attr)
+        et.SubElement(detail,'color', attrib=color_attr)   
+        et.SubElement(detail,'altNinelines', attrib=altNinelines_attr) 
+        et.SubElement(detail,'fiveline', attrib=fiveline_attr)        
+        et.SubElement(detail,'precisionlocation', attrib=precision_attr)       
+        
+        # serverdestination req'd
+        #et.SubElement(detail,'__serverdestination', attrib=serverdestination)
+
+        # Prepend the XML header
+        cot_xml = b'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' + b'\n' + et.tostring(cot)
+        #cot_xml = et.tostring(cot)
+        #print(cot_xml)
+        return cot_xml
+        
+    # ==============================================================================================================
+        
+    @staticmethod
     def mkcot(
          cot_stale=5, cot_how="m-g"
         , cot_lat=41.390638 , cot_lon=-73.953104, cot_hae=9999999
@@ -119,7 +226,7 @@ class mkcot:
             "ce": str(cot_ce),
             "le": str(cot_le)
         }
-
+        #-----------------------------------------------------
         # now the sub-elements for the detail block
         if not tgt_call:
             precision_attr = {

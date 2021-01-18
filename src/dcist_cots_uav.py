@@ -21,11 +21,14 @@ from geometry_msgs.msg import PoseStamped
 from geometry_msgs.msg import Vector3Stamped
 from arl_nav_msgs.msg import GotoRegionActionGoal # Used to publish target location as a goto goal
 from nav_msgs.msg import Odometry
+from vision_msgs.msg import Detection2DArray
 
 from takpak.mkcot import mkcot
 from takpak.takcot import takcot
 
 from LatLongUTMconversion import LLtoUTM, UTMtoLL
+
+#TODO Develop good answer to proper usage of global frame and odom frame. Currently goals use odom frame, probably should be utm.
 
 node_name='dcist_cots'
 zone='18T'
@@ -75,6 +78,40 @@ rospy.loginfo("SUCCESSFUL Conection with the server. The server believes my call
 # Setup ROS message to publish
 target_msg = Vector3Stamped()
 
+target_list = ["car","boat"]
+last_pose = PoseStamped()
+
+def object_location_cb(data):
+    global takserver
+    global zone
+    for detection in data.detections: 
+        for result in detection.results:
+            r_pose = result.pose.pose.position
+            if result.id in target_list:
+            
+                delta = result.pose.pose.inverseTimes(last_pose.pose)
+                obj_pose_utm_stamped = PoseStamped()
+                obj_pose_utm_stamped.header = detection.header                        
+                obj_pose_utm_stamped.pose = result.pose.pose 
+                obj_pose_utm = tf1_listener.transformPose("utm", obj_pose_utm_stamped)
+                (obj_latitude,obj_longitude) = UTMtoLL(23, obj_pose_utm.pose.position.y, obj_pose_utm.pose.position.x, zone) # 23 is WGS-84. 
+                rospy.loginfo('Delta: %.3f ID: %s, Score: %.2f, Location: %.3f, %.3f, %.3f -- LatLong: %.5f, %.5f -- UTM: %.3f, %.3f, %.3f' %
+                        (delta, result.id,result.score, r_pose.x, r_pose.y,r_pose.z, obj_latitude, obj_longitude,
+                        obj_pose_utm.pose.position.x, obj_pose_utm.pose.position.y,obj_pose_utm.pose.position.z))
+                takserver.send(mkcot.mkcot_tgt(
+                    cot_stale = 1, 
+                    cot_how="m-g", 
+                    cot_lat=obj_latitude,
+                    cot_lon=obj_longitude,
+                    cot_type="a-h-G",
+                    cot_callsign=result.id, 
+                    cot_parent_callsign=my_callsign, 
+                    cot_id=my_uid, 
+                    color="-1",
+                    sender_uid= my_uid)) 
+                last_pose = result.pose.pose
+
+rospy.Subscriber("/uav1/detection_localization/detections/out/local", Detection2DArray, object_location_cb)    
 # Setup and run the main while loop
 count = 1 # used to keep connection alive
 
