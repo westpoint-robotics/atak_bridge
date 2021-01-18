@@ -7,6 +7,7 @@ import sys
 import time
 import uuid
 import socket
+import numpy as np
 
 import json
 import xml.etree.ElementTree as ET
@@ -17,7 +18,7 @@ import rospy
 import rospkg
 import tf
 from visualization_msgs.msg import MarkerArray
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PoseStamped, Pose
 from geometry_msgs.msg import Vector3Stamped
 from arl_nav_msgs.msg import GotoRegionActionGoal # Used to publish target location as a goto goal
 from nav_msgs.msg import Odometry
@@ -79,37 +80,49 @@ rospy.loginfo("SUCCESSFUL Conection with the server. The server believes my call
 target_msg = Vector3Stamped()
 
 target_list = ["car","boat"]
-last_pose = PoseStamped()
+last_pose = Pose()
+tak_cotmsg = mkcot.mkcot_tgt()
+
+def distancePoses(pose1, pose2):
+    p1 = np.array([pose1.position.x,pose1.position.y,pose1.position.z])
+    p2 = np.array([pose2.position.x,pose2.position.y,pose2.position.z])
+    squared_dist = np.sum((p1-p2)**2, axis=0)
+    dist = np.sqrt(squared_dist)
+    return dist
 
 def object_location_cb(data):
     global takserver
     global zone
+    global last_pose
+    global tak_cotmsg
     for detection in data.detections: 
         for result in detection.results:
-            r_pose = result.pose.pose.position
             if result.id in target_list:
-            
-                delta = result.pose.pose.inverseTimes(last_pose.pose)
-                obj_pose_utm_stamped = PoseStamped()
-                obj_pose_utm_stamped.header = detection.header                        
-                obj_pose_utm_stamped.pose = result.pose.pose 
-                obj_pose_utm = tf1_listener.transformPose("utm", obj_pose_utm_stamped)
-                (obj_latitude,obj_longitude) = UTMtoLL(23, obj_pose_utm.pose.position.y, obj_pose_utm.pose.position.x, zone) # 23 is WGS-84. 
-                rospy.loginfo('Delta: %.3f ID: %s, Score: %.2f, Location: %.3f, %.3f, %.3f -- LatLong: %.5f, %.5f -- UTM: %.3f, %.3f, %.3f' %
-                        (delta, result.id,result.score, r_pose.x, r_pose.y,r_pose.z, obj_latitude, obj_longitude,
-                        obj_pose_utm.pose.position.x, obj_pose_utm.pose.position.y,obj_pose_utm.pose.position.z))
-                takserver.send(mkcot.mkcot_tgt(
-                    cot_stale = 1, 
-                    cot_how="m-g", 
-                    cot_lat=obj_latitude,
-                    cot_lon=obj_longitude,
-                    cot_type="a-h-G",
-                    cot_callsign=result.id, 
-                    cot_parent_callsign=my_callsign, 
-                    cot_id=my_uid, 
-                    color="-1",
-                    sender_uid= my_uid)) 
-                last_pose = result.pose.pose
+                obj_pose_stamped = PoseStamped()
+                obj_pose_stamped.header = detection.header 
+                obj_pose_stamped.pose = result.pose.pose
+                obj_pose_utm = tf1_listener.transformPose("utm", obj_pose_stamped)
+                crnt_pose = obj_pose_utm.pose
+                delta = distancePoses(last_pose, crnt_pose)
+                if delta > 5.0:
+                    rospy.loginfo("LARGE Delta") 
+                    (obj_latitude,obj_longitude) = UTMtoLL(23, crnt_pose.position.y, crnt_pose.position.x, zone) # 23 is WGS-84. 
+                    tak_cotmsg = mkcot.mkcot_tgt(
+                        cot_stale = 1, 
+                        cot_how="m-g", 
+                        cot_lat=obj_latitude,
+                        cot_lon=obj_longitude,
+                        cot_type="a-h-G",
+                        cot_callsign=result.id, 
+                        cot_parent_callsign=my_callsign, 
+                        cot_id=my_uid, 
+                        color="-1",
+                        sender_uid= my_uid)
+                last_pose = crnt_pose
+                rospy.loginfo('Delta: %.3f ID: %s, Score: %.2f -- Location: %.3f, %.3f, %.3f' %
+                        (delta, result.id,result.score, crnt_pose.position.x, crnt_pose.position.y,crnt_pose.position.z))
+                takserver.send(tak_cotmsg)
+
 
 rospy.Subscriber("/uav1/detection_localization/detections/out/local", Detection2DArray, object_location_cb)    
 # Setup and run the main while loop
