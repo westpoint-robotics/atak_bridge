@@ -30,6 +30,9 @@ from takpak.takcot import takcot
 
 from LatLongUTMconversion import LLtoUTM, UTMtoLL
 
+#TODO Investigate handling of TAK messages arriving faster than being processed by this code.
+#TODO Find a sufficient answer to send duplicate targets. Seeing 2 tgts and reporting one, and the other way around.
+
 class AtakBridge:
     """A class used to communication between an ATAK and robots"""
     
@@ -45,14 +48,36 @@ class AtakBridge:
         self.my_uid              = self.set_uid()
         self.zone='18T'
         self.takmsg_tree = ''
+        self.target_list = ["car","boat"]
         self.tf1_listener = tf.TransformListener()
         self.tf1_listener.waitForTransform(self.global_frame, self.baselink_frame, rospy.Time(0), rospy.Duration(35.0))
         self.goal_topic="/"+self.robot_name+"/nav_goal/2d"
         self.uav_pub = rospy.Publisher(self.goal_topic, PoseStamped, queue_size=10)
-        
+        rospy.Subscriber("/uav1/detection_localization/detections/out/local", Detection2DArray, self.object_location_cb)
         rospy.loginfo("Started ATAK Bridge with the following:\n\t\tCallsign: %s\n\t\tUID: %s\n\t\tTeam name: %s"
                     %(self.my_callsign,self.my_uid,self.my_team_name))
         self.takserver = takcot() #TODO add a timeout and exit condition                    
+        
+    def object_location_cb(self, data):        
+        for detection in data.detections: 
+            for result in detection.results:
+                if result.id in self.target_list:
+                    obj_pose_stamped = PoseStamped()
+                    obj_pose_stamped.header = detection.header 
+                    obj_pose_stamped.pose = result.pose.pose
+                    obj_pose_utm = self.tf1_listener.transformPose("utm", obj_pose_stamped)
+                    (obj_latitude,obj_longitude) = UTMtoLL(23, obj_pose_utm.pose.position.y, obj_pose_utm.pose.position.x, self.zone) # 23 is WGS-84.          
+                    self.takserver.send(mkcot.mkcot(cot_identity="neutral", 
+                        cot_stale = 1, 
+                        cot_type="a-f-G-M-F-Q",
+                        cot_how="m-g", 
+                        cot_callsign=result.id, 
+                        cot_id="object", 
+                        team_name="detector", 
+                        team_role="obj detector",
+                        cot_lat=obj_latitude,
+                        cot_lon=obj_longitude ))                    
+
         
     def set_uid(self):
         """Set the UID using either a rosparam or the system uuid"""
@@ -140,9 +165,7 @@ class AtakBridge:
         #rospy.loginfo("latlong: %.7f,%.7f baselinkg is: %s"%(crnt_latitude,crnt_longitude, self.baselink_frame))    
         self.takserver.send(mkcot.mkcot(cot_identity="friend", 
             cot_stale = 1, 
-            #cot_dimension="land-unit",
             cot_type="a-f-G-M-F-Q",
-            #cot_type="a-f-G-U-C", 
             cot_how="m-g", 
             cot_callsign=self.my_callsign, 
             cot_id=self.my_uid, 
