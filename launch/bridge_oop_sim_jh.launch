@@ -1,0 +1,49 @@
+<launch>
+
+  <arg name="vehicle_namespace" default="uav1"/>
+
+
+  <!-- Settings for ATAK communications -->
+  <arg name="callsign" default="$(arg vehicle_namespace)" doc="The callsign used by the robot on the ATAK system"/>
+  <arg name="team_name" default="USMA_Robots" doc="The Team Name used by the robot on the ATAK system"/>
+  <arg name="team_role" default="Autonomous Agent" doc="The Team Role used by the robot on the ATAK system"/>
+  <arg name="tak_ip" default="10.13.0.10" doc="The IP address of the ATAK server"/>
+  <arg name="tak_port" default="8088" doc="The Port number on the ATAK server to connect to"/>
+  <arg name="odom_topic" default="/$(arg vehicle_namespace)/mavros/global_position/local" doc="The odometry topic that declares the robot location"/>
+  <arg name="baselink_frame" default="/$(arg vehicle_namespace)/base_link" doc="The base link frame of the robot"/>
+  <arg name="global_frame" default="$(arg vehicle_namespace)/odom" doc="The global coordinate frame used to send global locations to ATAK"/>
+
+<!--
+41.389974, -73.955016 37 degrees magnetic TH1136 
+41.39058,  -73.95323  0  degrees magnetic River Courts
+-->
+  <!-- Default location is River Courts, WPNY -->
+  <arg name="start_latitude" default="41.389974" 
+    doc="The initial latitude when the robot's odom is all zeros."/> 
+  <arg name="start_longitude" default="-73.955016"
+    doc="The initial longitude when the robot's odom is all zeros."/> 
+  <arg name="start_altitude" default="1.5"
+    doc="The initial altitude when the robot's odom is all zeros."/>
+  <arg name="start_heading" default="0.0"/> <!-- A heading of 0 indicates due west -->
+
+  <group ns="$(arg vehicle_namespace)/atak">
+  
+  
+    <node name="dcist_cots" pkg="atak_bridge" type="oop_dcist_atak_sim_jh.py" output="screen">
+<!--    <node name="dcist_cots" pkg="atak_bridge" type="obj_2_atak_uav.py" output="screen">-->
+        <param name="name" value="$(arg vehicle_namespace)" />
+        <param name="callsign" value="$(arg callsign)" />
+        <param name="team_name" value="$(arg team_name)" />
+        <param name="team_role" value="$(arg team_role)" />
+        <param name="tak_ip" value="$(arg tak_ip)" />
+        <param name="tak_port" value="$(arg tak_port)" />
+        <param name="odom_topic" value="$(arg odom_topic)" />
+        <param name="baselink_frame" value="$(arg baselink_frame)" />
+        <param name="global_frame" value="$(arg global_frame)" />
+    </node>
+
+  </group> 
+
+
+
+</launch>
