@@ -272,15 +272,19 @@ class mkcot:
 
         if iconpath:
             icon_attr = {
+                #"iconsetpath": '34ae1613-9645-4222-a9d2-e5f243dea2865/Military/sfapmh------.png'
                 #"iconsetpath": '34ae1613-9645-4222-a9d2-e5f243dea2865/Military/soldier6.png'
                 "iconsetpath": 'f7f71666-8b28-4b57-9fbb-e38e61d33b79/Google/placemark_circle.png'
 #                "iconsetpath": iconpath
             }
+            #print("iconattr: ",icon_attr)
         else:
             icon_attr = None
 
         if color:
             color_attr = { "argb": '-8454017' }
+            #color_attr = { "argb": '-1' }
+            #print("color_attr: ",color_attr)
         else:
             color_attr = None
 
@@ -366,10 +370,11 @@ class mkcot:
                 et.SubElement(detail,'takv', attrib=platform_attr)
 
             # Optional icon/color
-            if icon_attr:
-                et.SubElement(detail,'usericon', attrib=icon_attr)
-            if color_attr:
-                et.SubElement(detail,'color', attrib=color_attr)
+#            if icon_attr:
+#                et.SubElement(detail,'usericon', attrib=icon_attr)
+#            color_attr = { "argb": '-8454017' }
+#            if color_attr:
+#                et.SubElement(detail,'color', attrib=color_attr)
 
 
         # Prepend the XML header
@@ -377,4 +382,3 @@ class mkcot:
         #cot_xml = et.tostring(cot)
         #print(cot_xml)
         return cot_xml
-

@@ -13,9 +13,11 @@ The nodes that convert between UTM and LL are not tested for navigation across U
 #### Example usage
 There are launch files compatible with a UGS using ARL Phoenix stack and UAS Mav_Platform stack. If you are using this with other software stacks you may need to modify the messages pulbished. Each version uses a node with similiar code. They are not yet consolidated because the they each use custom messages that are propritery to their software stack.
 1. To run this with the Phoenix stack use:  
-`roslaunch atak_bridge grnd_tak_bridge.launch`  
+- `roslaunch atak_bridge grnd_tak_bridge.launch`  
 2. To run this with the Mav_Platform stack use:  
-`roslaunch atak_bridge uas_tak_bridge.launch`  
+- `roslaunch atak_bridge uas_tak_bridge.launch`  
+- This node relies on the object class name being published in the detected object topic. This maybe enabled with this parameter:  
+    `<param name="/uav1/tflite_ros/use_label_as_id" value="True"/>`  
 
 #### Parameters
 - `name` (string, default: 'husky')  

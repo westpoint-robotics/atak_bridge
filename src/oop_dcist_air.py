@@ -2,6 +2,12 @@
 from __future__ import (absolute_import, division,
                         print_function, unicode_literals)
 
+'''
+  <node type="static_transform_publisher" pkg="tf2_ros" name="dummy2_utm_frame" args="587361 4582574 0 0 0 1.571 utm $(arg name)/map" />
+
+rosrun tf2_ros static_transform_publisher 587361 4582574 0 0 0 1.571 utm husky/map
+'''
+
 import os
 import sys
 import time
@@ -18,12 +24,12 @@ import rospy
 import rospkg
 import tf
 
-from visualization_msgs.msg import MarkerArray
+from visualization_msgs.msg import MarkerArray, Marker
 from geometry_msgs.msg import PoseStamped, Pose
 from geometry_msgs.msg import Vector3Stamped
 #from arl_nav_msgs.msg import GotoRegionActionGoal # Used to publish target location as a goto goal
 from nav_msgs.msg import Odometry
-from vision_msgs.msg import Detection2DArray
+from vision_msgs.msg import Detection2DArray #TODO this message is what is used in mavplatform, does not exist in phoenix
 
 from takpak.mkcot import mkcot
 from takpak.takcot import takcot
@@ -37,7 +43,7 @@ class AtakBridge:
     """A class used to communication between an ATAK and robots"""
     
     def __init__(self):
-        self.robot_name          = rospy.get_param('~name', "warty")
+        self.robot_name          = rospy.get_param('~name', "husky")
         self.my_team_name        = rospy.get_param('~team_name', 'Cyan') #Use one from ATAK which are colors  
         self.my_team_role        = rospy.get_param('~team_role', 'Team Member') # Use one from ATAK
         self.tak_ip              = rospy.get_param('~tak_ip', '127.0.0.1') 
@@ -48,15 +54,19 @@ class AtakBridge:
         self.my_uid              = self.set_uid()
         self.zone='18T'
         self.takmsg_tree = ''
-        self.target_list = ["car","boat"]
+        self.target_list = ["car", "Vehicle"]
         self.tf1_listener = tf.TransformListener()
         self.tf1_listener.waitForTransform(self.global_frame, self.baselink_frame, rospy.Time(0), rospy.Duration(35.0))
-        self.goal_topic="/"+self.robot_name+"/nav_goal/2d"
+        self.marker_topic="/"+self.robot_name+"/atak/goal"
+        self.vis_pub = rospy.Publisher(self.marker_topic, Marker, queue_size=10)
+        self.goal_topic="/"+self.robot_name+"/nav_goal/2d"        
         self.uav_pub = rospy.Publisher(self.goal_topic, PoseStamped, queue_size=10)
-        rospy.Subscriber("/uav1/detection_localization/detections/out/local", Detection2DArray, self.object_location_cb)
-        rospy.loginfo("Started ATAK Bridge with the following:\n\t\tCallsign: %s\n\t\tUID: %s\n\t\tTeam name: %s"
-                    %(self.my_callsign,self.my_uid,self.my_team_name))
-        self.takserver = takcot() #TODO add a timeout and exit condition                    
+        
+        rospy.Subscriber("/husky/worldmodel_rviz/object_markers", MarkerArray, self.object_location_cb)
+        #rospy.Subscriber("/uav1/detection_localization/detections/out/local", Detection2DArray, self.object_location_cb)
+        rospy.loginfo("Started ATAK Bridge with the following:\n\t\tCallsign: %s\n\t\tUID: %s\n\t\tTeam name: %s\n\t\tGlobal Frame: %s"
+                    %(self.my_callsign,self.my_uid,self.my_team_name,self.global_frame))
+        self.takserver = takcot() #TODO add a timeout and exit condition                                
         
     def object_location_cb(self, data):        
         for detection in data.detections: 
@@ -72,19 +82,18 @@ class AtakBridge:
                         cot_type="a-f-G-M-F-Q",
                         cot_how="m-g", 
                         cot_callsign=result.id, 
-                        cot_id="uas_object", 
-                        team_name="Yellow", 
-                        team_role="Team Member",
+                        cot_id="object", 
+                        team_name="detector", 
+                        team_role="obj detector",
                         cot_lat=obj_latitude,
                         cot_lon=obj_longitude ))                    
-
         
     def set_uid(self):
         """Set the UID using either a rosparam or the system uuid"""
         if rospy.has_param('~uid'):
             uid = rospy.get_param('~uid')
         else:
-            uid = str('uas_'+socket.getfqdn()) + "-" + str(uuid.uuid1())[-12:]  
+            uid = "ugv_"+str(socket.getfqdn()) + "-" + str(uuid.uuid1())[-12:]  
         return uid  
             
         
@@ -101,7 +110,7 @@ class AtakBridge:
         rospy.loginfo("==== If the code appears to freeze at this point, then it is likely the server is not reachable  =====")    
         try:
             tasksock = self.takserver.open(self.tak_ip, self.tak_port)
-            self.takserver.flush()    
+            self.takserver.flush()          
         except:
             rospy.logerr("Failed to connect to the TAK Server")
             exit()
@@ -126,13 +135,13 @@ class AtakBridge:
         try: # TODO Use a non-blocking read of the socket
             cotresponse = self.takserver.readcot(readtimeout=1) # This is a blocking read for 1 second.
             cot_xml = cotresponse[0]
-            rospy.logdebug("COT XML:\n%s" %(cot_xml))
+            #rospy.loginfo("COT XML:\n%s" %(cot_xml))
             if (len(cot_xml)>1):
                 self.takmsg_tree = ET.fromstring(cot_xml)
         except:
             rospy.logdebog("Read Cot failed: %s" % (sys.exc_info()[0]))
             
-    def parse_takmsg(self):
+    def parse_takmsg_air(self):
         fiveline = self.takmsg_tree.find("./detail/fiveline")
         #rospy.loginfo("fiveline:%s" %fiveline)
         if not(fiveline in (-1, None)):
@@ -162,7 +171,6 @@ class AtakBridge:
         crnt_pose = self.tf1_listener.lookupTransform('utm', self.baselink_frame, rospy.Time(0))
         (crnt_latitude,crnt_longitude) = UTMtoLL(23, crnt_pose[0][1], crnt_pose[0][0], self.zone) # 23 is WGS-84.                      
         # Send the current position to the TAK Server  
-        #rospy.loginfo("latlong: %.7f,%.7f baselinkg is: %s"%(crnt_latitude,crnt_longitude, self.baselink_frame))    
         my_cot = mkcot.mkcot(cot_identity="friend", 
             cot_stale = 1, 
             cot_type="a-f-G-M-F-Q",
@@ -176,7 +184,6 @@ class AtakBridge:
         self.takserver.send( my_cot)   
         #rospy.loginfo(my_cot) 
             
-        
 if __name__ == '__main__':
     try:
         rospy.init_node("atak_bridge")
@@ -186,7 +193,7 @@ if __name__ == '__main__':
         rate = rospy.Rate(loop_hz) # The rate of the loop is no faster than then the timeout.
         while not rospy.is_shutdown():
             bridge.takserver_read()
-            bridge.parse_takmsg()
+            bridge.parse_takmsg_air()
             bridge.robot_pose_to_tak()
         
         
@@ -196,3 +203,4 @@ if __name__ == '__main__':
         bridge.takserver_shutdown()
     except rospy.ROSInterruptException:
         pass        
+
