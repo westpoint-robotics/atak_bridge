@@ -88,27 +88,7 @@ class AtakBridge:
                     team_name="Green", 
                     team_role="Team Member",
                     cot_lat=obj_latitude,
-                    cot_lon=obj_longitude ))             
-        
-    def object_location_cb(self, data):        
-        for detection in data.detections: 
-            for result in detection.results:
-                if result.id in self.target_list:
-                    obj_pose_stamped = PoseStamped()
-                    obj_pose_stamped.header = detection.header 
-                    obj_pose_stamped.pose = result.pose.pose
-                    obj_pose_utm = self.tf1_listener.transformPose("utm", obj_pose_stamped)
-                    (obj_latitude,obj_longitude) = UTMtoLL(23, obj_pose_utm.pose.position.y, obj_pose_utm.pose.position.x, self.zone) # 23 is WGS-84.          
-                    self.takserver.send(mkcot.mkcot(cot_identity="neutral", 
-                        cot_stale = 1, 
-                        cot_type="a-f-G-M-F-Q",
-                        cot_how="m-g", 
-                        cot_callsign=result.id, 
-                        cot_id="object", 
-                        team_name="detector", 
-                        team_role="obj detector",
-                        cot_lat=obj_latitude,
-                        cot_lon=obj_longitude ))                    
+                    cot_lon=obj_longitude ))                              
         
     def set_uid(self):
         """Set the UID using either a rosparam or the system uuid"""
@@ -162,32 +142,7 @@ class AtakBridge:
                 self.takmsg_tree = ET.fromstring(cot_xml)
         except:
             rospy.logdebog("Read Cot failed: %s" % (sys.exc_info()[0]))
-            
-    def parse_takmsg_air(self):
-        fiveline = self.takmsg_tree.find("./detail/fiveline")
-        #rospy.loginfo("fiveline:%s" %fiveline)
-        if not(fiveline in (-1, None)):
-            target_num = fiveline.attrib['fiveline_target_number']
-            # If this is a goto location then publish it as a go to goal.
-            # Assumes utm is the global frame.
-            if ('U99999' == target_num):
-                try:
-                    this_uid = self.takmsg_tree.get("uid")
-                    lat = self.takmsg_tree.find("./point").attrib['lat']
-                    lon = self.takmsg_tree.find("./point").attrib['lon']
-                except Exception, e:
-                    rospy.logwarn("----- Recieved ATAK Message and it is not a move to command -----"+ str(e))
-                (zone,crnt_utm_e,crnt_utm_n) = LLtoUTM(23, float(lat), float(lon))
-                goal_pose_stamped = PoseStamped()
-                goal_pose_stamped.header.stamp = rospy.Time.now()  
-                goal_pose_stamped.header.frame_id = 'utm'   
-                goal_pose_stamped.pose.position.x = crnt_utm_e                    
-                goal_pose_stamped.pose.position.y = crnt_utm_n 
-                msg = self.tf1_listener.transformPose(self.global_frame, goal_pose_stamped)           
-                msg.pose.position.z = 5.0            
-                self.uav_pub.publish(msg)           
-                rospy.loginfo("----- Recieved ATAK Message from UID: %s, saying move to lat/lon of %s, %s and map location %s, %s" %(this_uid,lat,lon, crnt_utm_e, crnt_utm_n))    
-                            
+
     def parse_takmsg_grnd(self):
 #        etree = ET.tostring(self.takmsg_tree, 'utf-8')
 #        rospy.loginfo("takmsg_tree:%s" %etree)

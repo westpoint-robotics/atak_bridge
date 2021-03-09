@@ -1,7 +1,8 @@
 <launch>
-
   <arg name="name" default="husky"/>
   
+
+
 <!--rosrun tf tf_echo world ground_truth/husky/base-->
 <!--- Translation: [0.050, 0.987, -2.541]-->
 <!--- Rotation: in Quaternion [-0.006, 0.041, -0.703, 0.710]-->
@@ -29,10 +30,8 @@
 41.39058,  -73.95323  0  degrees magnetic River Courts
 -->
 
-  <group ns="$(arg name)/atak">
-  
-    <node name="dcist_cots" pkg="atak_bridge" type="oop_dcist_grnd.py" output="screen">
-<!--    <node name="dcist_cots" pkg="atak_bridge" type="obj_2_atak_uav.py" output="screen">-->
+  <group ns="$(arg name)/atak">  
+    <node name="atak_bridge" pkg="atak_bridge" type="oop_dcist_grnd.py" output="screen">
         <param name="name" value="$(arg name)" />
         <param name="callsign" value="$(arg callsign)" />
         <param name="team_name" value="$(arg team_name)" />

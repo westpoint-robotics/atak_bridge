@@ -139,7 +139,7 @@ class AtakBridge:
             target_num = fiveline.attrib['fiveline_target_number']
             # If this is a goto location then publish it as a go to goal.
             # Assumes utm is the global frame.
-            if ('99999' == target_num):
+            if ('U99999' == target_num):
                 try:
                     this_uid = self.takmsg_tree.get("uid")
                     lat = self.takmsg_tree.find("./point").attrib['lat']
@@ -163,7 +163,7 @@ class AtakBridge:
         (crnt_latitude,crnt_longitude) = UTMtoLL(23, crnt_pose[0][1], crnt_pose[0][0], self.zone) # 23 is WGS-84.                      
         # Send the current position to the TAK Server  
         #rospy.loginfo("latlong: %.7f,%.7f baselinkg is: %s"%(crnt_latitude,crnt_longitude, self.baselink_frame))    
-        self.takserver.send(mkcot.mkcot(cot_identity="friend", 
+        my_cot = mkcot.mkcot(cot_identity="friend", 
             cot_stale = 1, 
             cot_type="a-f-G-M-F-Q",
             cot_how="m-g", 
@@ -172,7 +172,9 @@ class AtakBridge:
             team_name=self.my_team_name, 
             team_role=self.my_team_role,
             cot_lat=crnt_latitude,
-            cot_lon=crnt_longitude ))     
+            cot_lon=crnt_longitude )  
+        self.takserver.send( my_cot)   
+        #rospy.loginfo(my_cot) 
             
         
 if __name__ == '__main__':
