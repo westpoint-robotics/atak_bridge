@@ -175,8 +175,8 @@ class mkcot:
         , cot_os="1"   # Does not seem to matter, but is required for some CoT's
         , cot_platform=__name__  # Same as OS, sometimes required
         , cot_version=version
-        , iconpath="True"
-        , color="blue"
+        , iconpath="False"
+        , color="False"
         , team_name=__name__ , team_role="Team Member"
         , sender_uid=""
         , tgt_call=False
@@ -273,9 +273,7 @@ class mkcot:
         if iconpath:
             icon_attr = {
                 #"iconsetpath": '34ae1613-9645-4222-a9d2-e5f243dea2865/Military/soldier6.png'
-                #"iconsetpath": '34ae1613-9645-4222-a9d2-e5f243dea2865/Military/soldier6.png'
-                "iconsetpath": '34ae1613-9645-4222-a9d2-e5f243dea2865/Military/sfapmh______.png'
-                #"iconsetpath": 'f7f71666-8b28-4b57-9fbb-e38e61d33b79/Google/placemark_circle.png'
+                "iconsetpath": 'f7f71666-8b28-4b57-9fbb-e38e61d33b79/Google/placemark_circle.png'
 #                "iconsetpath": iconpath
             }
         else:

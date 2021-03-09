@@ -1,11 +1,22 @@
 <launch>
 
+<!--rosrun tf tf_echo world ground_truth/uav1/base-->
+<!--- Translation: [0.019, 2.996, -2.417]-->
+<!--- Rotation: in Quaternion [-0.028, 0.043, -0.705, 0.707]-->
+<!--            in RPY (radian) [-0.101, 0.021, -1.570]-->
+<!--            in RPY (degree) [-5.815, 1.231, -89.953]-->
+<!--<node type="static_transform_publisher" pkg="tf2_ros" name="dummyuas_utm_frame" args="587361 4582574 0 0 0 0 utm uav1/odom" />-->
+<!--River Courts  41.39058,  -73.95323  	18T 587513.65mE 4582648.09mN-->
+<!--River Courts Centered 41.3913870, -73.9529561    18T   587535.658  4582735.093-->
+<!--<node type="static_transform_publisher" pkg="tf2_ros" name="dummyuas_utm_frame" args="587513.639 4582648.039 0 0.018, 0.101, 0.022 utm uav1/odom" />-->
+<node type="static_transform_publisher" pkg="tf2_ros" name="dummyuas_utm_frame" args="587537.658 4582735.093 -2.417 0 0 0 utm uav1/odom" />
+
   <arg name="name" default="uav1"/>
 
   <!-- Settings for ATAK communications -->
   <arg name="callsign" default="$(arg name)" doc="The callsign used by the robot on the ATAK system"/>
-  <arg name="team_name" default="Ground Robots" doc="The Team Name used by the robot on the ATAK system"/>
-  <arg name="team_role" default="Autonomous Agent" doc="The Team Role used by the robot on the ATAK system"/>
+  <arg name="team_name" default="Blue" doc="The Team Name used by the robot on the ATAK system"/>
+  <arg name="team_role" default="Team Member" doc="The Team Role used by the robot on the ATAK system"/>
   <arg name="tak_ip" default="10.13.0.10" doc="The IP address of the ATAK server"/>
   <arg name="tak_port" default="8088" doc="The Port number on the ATAK server to connect to"/>
   <arg name="odom_topic" default="/uav1/mavros/global_position/local" doc="The odometry topic that declares the robot location"/>

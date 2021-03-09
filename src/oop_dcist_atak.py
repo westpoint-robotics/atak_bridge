@@ -21,7 +21,7 @@ import tf
 from visualization_msgs.msg import MarkerArray
 from geometry_msgs.msg import PoseStamped, Pose
 from geometry_msgs.msg import Vector3Stamped
-from arl_nav_msgs.msg import GotoRegionActionGoal # Used to publish target location as a goto goal
+#from arl_nav_msgs.msg import GotoRegionActionGoal # Used to publish target location as a goto goal
 from nav_msgs.msg import Odometry
 from vision_msgs.msg import Detection2DArray
 
@@ -38,8 +38,8 @@ class AtakBridge:
     
     def __init__(self):
         self.robot_name          = rospy.get_param('~name', "warty")
-        self.my_team_name        = rospy.get_param('~team_name', 'Default Team')   
-        self.my_team_role        = rospy.get_param('~team_role', 'Default Team Role')
+        self.my_team_name        = rospy.get_param('~team_name', 'Cyan') #Use one from ATAK which are colors  
+        self.my_team_role        = rospy.get_param('~team_role', 'Team Member') # Use one from ATAK
         self.tak_ip              = rospy.get_param('~tak_ip', '127.0.0.1') 
         self.tak_port            = rospy.get_param('~tak_port', '8088')
         self.baselink_frame      = rospy.get_param('~baselink_frame', 'base_link') 
@@ -72,9 +72,9 @@ class AtakBridge:
                         cot_type="a-f-G-M-F-Q",
                         cot_how="m-g", 
                         cot_callsign=result.id, 
-                        cot_id="object", 
-                        team_name="detector", 
-                        team_role="obj detector",
+                        cot_id="uas_object", 
+                        team_name="Yellow", 
+                        team_role="Team Member",
                         cot_lat=obj_latitude,
                         cot_lon=obj_longitude ))                    
 
@@ -84,7 +84,7 @@ class AtakBridge:
         if rospy.has_param('~uid'):
             uid = rospy.get_param('~uid')
         else:
-            uid = str(socket.getfqdn()) + "-" + str(uuid.uuid1())[-12:]  
+            uid = str('uas_'+socket.getfqdn()) + "-" + str(uuid.uuid1())[-12:]  
         return uid  
             
         

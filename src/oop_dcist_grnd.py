@@ -3,7 +3,7 @@ from __future__ import (absolute_import, division,
                         print_function, unicode_literals)
 
 '''
-  <node type="static_transform_publisher" pkg="tf2_ros" name="dummy2_utm_frame" args="587361 4582574 0 0 1.571 utm $(arg name)/map" />
+  <node type="static_transform_publisher" pkg="tf2_ros" name="dummy2_utm_frame" args="587361 4582574 0 0 0 1.571 utm $(arg name)/map" />
 
 rosrun tf2_ros static_transform_publisher 587361 4582574 0 0 0 1.571 utm husky/map
 '''
@@ -43,9 +43,9 @@ class AtakBridge:
     """A class used to communication between an ATAK and robots"""
     
     def __init__(self):
-        self.robot_name          = rospy.get_param('~name', "warty")
-        self.my_team_name        = rospy.get_param('~team_name', 'Default Team')   
-        self.my_team_role        = rospy.get_param('~team_role', 'Default Team Role')
+        self.robot_name          = rospy.get_param('~name', "husky")
+        self.my_team_name        = rospy.get_param('~team_name', 'Cyan') #Use one from ATAK which are colors  
+        self.my_team_role        = rospy.get_param('~team_role', 'Team Member') # Use one from ATAK
         self.tak_ip              = rospy.get_param('~tak_ip', '127.0.0.1') 
         self.tak_port            = rospy.get_param('~tak_port', '8088')
         self.baselink_frame      = rospy.get_param('~baselink_frame', 'base_link') 
@@ -54,7 +54,7 @@ class AtakBridge:
         self.my_uid              = self.set_uid()
         self.zone='18T'
         self.takmsg_tree = ''
-        self.target_list = ["car","boat"]
+        self.target_list = ["car", "Vehicle"]
         self.tf1_listener = tf.TransformListener()
         self.tf1_listener.waitForTransform(self.global_frame, self.baselink_frame, rospy.Time(0), rospy.Duration(35.0))
         self.marker_topic="/"+self.robot_name+"/atak/goal"
@@ -83,10 +83,10 @@ class AtakBridge:
                     cot_stale = 1, 
                     cot_type="a-f-G-M-F-Q",
                     cot_how="m-g", 
-                    cot_callsign=result.id, 
-                    cot_id="object", 
-                    team_name="detector", 
-                    team_role="obj detector",
+                    cot_callsign=item.ns, 
+                    cot_id="ugv_object", 
+                    team_name="Green", 
+                    team_role="Team Member",
                     cot_lat=obj_latitude,
                     cot_lon=obj_longitude ))             
         
@@ -115,7 +115,7 @@ class AtakBridge:
         if rospy.has_param('~uid'):
             uid = rospy.get_param('~uid')
         else:
-            uid = str(socket.getfqdn()) + "-" + str(uuid.uuid1())[-12:]  
+            uid = "ugv_"+str(socket.getfqdn()) + "-" + str(uuid.uuid1())[-12:]  
         return uid  
             
         
@@ -189,6 +189,8 @@ class AtakBridge:
                 rospy.loginfo("----- Recieved ATAK Message from UID: %s, saying move to lat/lon of %s, %s and map location %s, %s" %(this_uid,lat,lon, crnt_utm_e, crnt_utm_n))    
                             
     def parse_takmsg_grnd(self):
+#        etree = ET.tostring(self.takmsg_tree, 'utf-8')
+#        rospy.loginfo("takmsg_tree:%s" %etree)
         try:    
             fiveline = self.takmsg_tree.find("./detail/fiveline")
             #rospy.loginfo("fiveline:%s" %fiveline)
@@ -249,7 +251,7 @@ class AtakBridge:
         (crnt_latitude,crnt_longitude) = UTMtoLL(23, crnt_pose[0][1], crnt_pose[0][0], self.zone) # 23 is WGS-84.                      
         # Send the current position to the TAK Server  
         #rospy.loginfo("latlong: %.7f,%.7f baselinkg is: %s"%(crnt_latitude,crnt_longitude, self.baselink_frame))    
-        self.takserver.send(mkcot.mkcot(cot_identity="friend", 
+        my_cot = mkcot.mkcot(cot_identity="friend", 
             cot_stale = 1, 
             cot_type="a-f-G-M-F-Q",
             cot_how="m-g", 
@@ -258,7 +260,9 @@ class AtakBridge:
             team_name=self.my_team_name, 
             team_role=self.my_team_role,
             cot_lat=crnt_latitude,
-            cot_lon=crnt_longitude ))     
+            cot_lon=crnt_longitude )  
+        self.takserver.send( my_cot)   
+        #rospy.loginfo(my_cot) 
             
         
 if __name__ == '__main__':
