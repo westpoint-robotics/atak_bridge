@@ -1,0 +1,49 @@
+<launch>
+  <arg name="name" default="husky"/>
+  
+
+
+<!--rosrun tf tf_echo world ground_truth/husky/base-->
+<!--- Translation: [0.050, 0.987, -2.541]-->
+<!--- Rotation: in Quaternion [-0.006, 0.041, -0.703, 0.710]-->
+<!--            in RPY (radian) [-0.066, 0.050, -1.561]-->
+<!--            in RPY (degree) [-3.770, 2.862, -89.462]-->
+<!--<node type="static_transform_publisher" pkg="tf2_ros" name="dummy2_utm_frame" args="587361 4582574 0 0 0 0 utm $(arg name)/map" />-->
+<!--River Courts  41.39058,  -73.95323  	18T 587513.65mE 4582648.09mN-->
+<!--River Courts Centered 41.3913870, -73.9529561    18T   587535.658  4582735.093-->
+<!--<node type="static_transform_publisher" pkg="tf2_ros" name="dummy2_utm_frame" args="587359.62 4582570.941 0 -1.193, 0.102, 0.127 utm $(arg name)/map" />-->
+<!--<node type="static_transform_publisher" pkg="tf2_ros" name="dummy2_utm_frame" args="587512.27 4582645.031 0 -1.193, 0.102, 0.127 utm $(arg name)/map" />-->
+<node type="static_transform_publisher" pkg="tf2_ros" name="dummy2_utm_frame" args="587532.658 4582735.093 -2.54 -1.57 0 0 utm $(arg name)/map" />
+
+
+  <!-- Settings for ATAK communications -->
+  <arg name="callsign" default="$(arg name)" doc="The callsign used by the robot on the ATAK system"/>
+  <arg name="team_name" default="Cyan" doc="The Team Name used by the robot on the ATAK system"/>
+  <arg name="team_role" default="Team Member" doc="The Team Role used by the robot on the ATAK system"/>
+  <arg name="tak_ip" default="10.13.0.10" doc="The IP address of the ATAK server"/>
+  <arg name="tak_port" default="8088" doc="The Port number on the ATAK server to connect to"/>
+  <arg name="baselink_frame" default="/husky/base_link" doc="The base link frame of the robot"/>
+  <arg name="global_frame" default="husky/odom" doc="The global coordinate frame used to send global locations to ATAK"/>
+
+<!-- 
+41.389974, -73.955016 37 degrees magnetic TH1136 
+41.39058,  -73.95323  0  degrees magnetic River Courts
+-->
+
+  <group ns="$(arg name)/atak">  
+    <node name="atak_bridge" pkg="atak_bridge" type="oop_dcist_grnd.py" output="screen">
+        <param name="name" value="$(arg name)" />
+        <param name="callsign" value="$(arg callsign)" />
+        <param name="team_name" value="$(arg team_name)" />
+        <param name="team_role" value="$(arg team_role)" />
+        <param name="tak_ip" value="$(arg tak_ip)" />
+        <param name="tak_port" value="$(arg tak_port)" />
+        <param name="baselink_frame" value="$(arg baselink_frame)" />
+        <param name="global_frame" value="$(arg global_frame)" />
+    </node>
+
+  </group> 
+
+</launch>
+
+
