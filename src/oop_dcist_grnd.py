@@ -27,7 +27,7 @@ import tf
 from visualization_msgs.msg import MarkerArray, Marker
 from geometry_msgs.msg import PoseStamped, Pose
 from geometry_msgs.msg import Vector3Stamped
-from arl_nav_msgs.msg import GotoRegionActionGoal # Used to publish target location as a goto goal
+#from arl_nav_msgs.msg import GotoRegionActionGoal # Used to publish target location as a goto goal
 from nav_msgs.msg import Odometry
 #from vision_msgs.msg import Detection2DArray #TODO this message is what is used in mavplatform, does not exist in phoenix
 
@@ -43,7 +43,7 @@ class AtakBridge:
     """A class used to communication between an ATAK and robots"""
     
     def __init__(self):
-        self.robot_name          = rospy.get_param('~name', "husky")
+        self.robot_name          = rospy.get_param('~name', "jackal")
         self.my_team_name        = rospy.get_param('~team_name', 'Cyan') #Use one from ATAK which are colors  
         self.my_team_role        = rospy.get_param('~team_role', 'Team Member') # Use one from ATAK
         self.tak_ip              = rospy.get_param('~tak_ip', '127.0.0.1') 
@@ -56,13 +56,14 @@ class AtakBridge:
         self.takmsg_tree = ''
         self.target_list = ["car", "Vehicle"]
         self.tf1_listener = tf.TransformListener()
-        self.tf1_listener.waitForTransform(self.global_frame, self.baselink_frame, rospy.Time(0), rospy.Duration(35.0))
+        self.tf1_listener.waitForTransform(self.global_frame, self.baselink_frame, rospy.Time(0), rospy.Duration(15.0))
         self.marker_topic="/atak/goal"
         self.vis_pub = rospy.Publisher(self.marker_topic, Marker, queue_size=10)
         #self.goal_topic="/"+self.robot_name+"/nav_goal/2d"        
         #self.uav_pub = rospy.Publisher(self.goal_topic, PoseStamped, queue_size=10)
         self.goal_topic="/move_base_simple/goal"
-        self.grnd_pub = rospy.Publisher(self.goal_topic, GotoRegionActionGoal, queue_size=10)
+        self.grnd_pub = rospy.Publisher(self.goal_topic, PoseStamped, queue_size=10)
+#        self.grnd_pub = rospy.Publisher(self.goal_topic, GotoRegionActionGoal, queue_size=10)
         
         #rospy.Subscriber("/husky/worldmodel_rviz/object_markers", MarkerArray, self.grnd_object_cb)
         #rospy.Subscriber("/uav1/detection_localization/detections/out/local", Detection2DArray, self.object_location_cb)
@@ -129,10 +130,12 @@ class AtakBridge:
 #        etree = ET.tostring(self.takmsg_tree, 'utf-8')
 #        rospy.loginfo("takmsg_tree:%s" %etree)
         try:    
-            fiveline = self.takmsg_tree.find("./detail/fiveline")
+            fiveline = self.takmsg_tree.find("./detail/remarks")
             #rospy.loginfo("fiveline:%s" %fiveline)
             if not(fiveline in (-1, None)):
-                target_num = fiveline.attrib['fiveline_target_number']
+#                target_num = fiveline.attrib['fiveline_target_number']
+                target_num = fiveline.text
+                rospy.loginfo("text is: %s" %target_num)
                 # If this is a goto location then publish it as a go to goal.
                 # Assumes utm is the global frame.
                 if ('SWATC' == target_num): # type into atak to move jackal to position 
@@ -148,18 +151,20 @@ class AtakBridge:
                     goal_pose_stamped.pose.position.y = crnt_utm_n 
                     goal_pose_stamped = self.tf1_listener.transformPose('map', goal_pose_stamped) 
                     goal_pose_stamped.pose.orientation.z = 0.0985357937255
-                    goal_pose_stamped.pose.orientation.w = 0.995133507302                                    
+                    goal_pose_stamped.pose.orientation.w = 0.995133507302
+                    msg=goal_pose_stamped                                   
+                    self.grnd_pub.publish(msg)                                 
 
-                    msg = GotoRegionActionGoal()                
-                    msg.header.stamp = rospy.Time.now()
-                    msg.goal_id.stamp = rospy.Time.now()
-                    msg.goal_id.id = "ATAK GOTO"
-                    msg.goal.region_center.header.stamp = msg.header.stamp
-                    msg.goal.region_center.header.frame_id = "map"
-                    msg.goal.region_center.pose = goal_pose_stamped.pose
-                    msg.goal.radius = 3.75
-                    msg.goal.angle_threshold = 3.108                                       
-                    self.grnd_pub.publish(msg)
+#                    msg = GotoRegionActionGoal()                
+#                    msg.header.stamp = rospy.Time.now()
+#                    msg.goal_id.stamp = rospy.Time.now()
+#                    msg.goal_id.id = "ATAK GOTO"
+#                    msg.goal.region_center.header.stamp = msg.header.stamp
+#                    msg.goal.region_center.header.frame_id = "map"
+#                    msg.goal.region_center.pose = goal_pose_stamped.pose
+#                    msg.goal.radius = 3.75
+#                    msg.goal.angle_threshold = 3.108                                       
+#                    self.grnd_pub.publish(msg)
                       
                     marker = Marker()
                     marker.header.frame_id = "map"           
