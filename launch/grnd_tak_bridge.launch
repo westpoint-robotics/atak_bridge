@@ -13,7 +13,7 @@
 <!--River Courts Centered 41.3913870, -73.9529561    18T   587535.658  4582735.093-->
 <!--<node type="static_transform_publisher" pkg="tf2_ros" name="dummy2_utm_frame" args="587359.62 4582570.941 0 -1.193, 0.102, 0.127 utm $(arg name)/map" />-->
 <!--<node type="static_transform_publisher" pkg="tf2_ros" name="dummy2_utm_frame" args="587512.27 4582645.031 0 -1.193, 0.102, 0.127 utm $(arg name)/map" />-->
-<node type="static_transform_publisher" pkg="tf2_ros" name="dummy2_utm_frame" args="587532.658 4582735.093 -2.54 -1.57 0 0 utm $(arg name)/map" />
+<node type="static_transform_publisher" pkg="tf2_ros" name="dummy2_utm_frame" args="587532.658 4582735.093 -2.54 0 0 0 utm map" />
 
 
   <!-- Settings for ATAK communications -->

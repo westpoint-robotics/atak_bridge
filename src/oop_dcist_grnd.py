@@ -5,7 +5,7 @@ from __future__ import (absolute_import, division,
 '''
   <node type="static_transform_publisher" pkg="tf2_ros" name="dummy2_utm_frame" args="587361 4582574 0 0 0 1.571 utm $(arg name)/map" />
 
-rosrun tf2_ros static_transform_publisher 587361 4582574 0 0 0 1.571 utm husky/map
+rosrun tf2_ros static_transform_publisher 587361 4582574 0 0 0 1.571 utm map
 '''
 
 import os
@@ -57,38 +57,20 @@ class AtakBridge:
         self.target_list = ["car", "Vehicle"]
         self.tf1_listener = tf.TransformListener()
         self.tf1_listener.waitForTransform(self.global_frame, self.baselink_frame, rospy.Time(0), rospy.Duration(35.0))
-        self.marker_topic="/"+self.robot_name+"/atak/goal"
+        self.marker_topic="/atak/goal"
         self.vis_pub = rospy.Publisher(self.marker_topic, Marker, queue_size=10)
         #self.goal_topic="/"+self.robot_name+"/nav_goal/2d"        
         #self.uav_pub = rospy.Publisher(self.goal_topic, PoseStamped, queue_size=10)
-        self.goal_topic="/"+self.robot_name+"/goto_region/goal"
+        self.goal_topic="/move_base_simple/goal"
         self.grnd_pub = rospy.Publisher(self.goal_topic, GotoRegionActionGoal, queue_size=10)
         
-        rospy.Subscriber("/husky/worldmodel_rviz/object_markers", MarkerArray, self.grnd_object_cb)
+        #rospy.Subscriber("/husky/worldmodel_rviz/object_markers", MarkerArray, self.grnd_object_cb)
         #rospy.Subscriber("/uav1/detection_localization/detections/out/local", Detection2DArray, self.object_location_cb)
         rospy.loginfo("Started ATAK Bridge with the following:\n\t\tCallsign: %s\n\t\tUID: %s\n\t\tTeam name: %s\n\t\tGlobal Frame: %s"
                     %(self.my_callsign,self.my_uid,self.my_team_name,self.global_frame))
         self.takserver = takcot() #TODO add a timeout and exit condition                    
         
-    def grnd_object_cb(self, data):       
-        for item in data.markers:
-            if item.ns in self.target_list:
-                obj_pose_stamped = PoseStamped()
-                obj_pose_stamped.header = item.header  
-                obj_pose_stamped.header.stamp = rospy.Time.now()                       
-                obj_pose_stamped.pose = item.pose
-                obj_pose = self.tf1_listener.transformPose("utm", obj_pose_stamped)        
-                (obj_latitude,obj_longitude) = UTMtoLL(23, obj_pose.pose.position.y, obj_pose.pose.position.x, self.zone) # 23 is WGS-84.  
-                self.takserver.send(mkcot.mkcot(cot_identity="neutral", 
-                    cot_stale = 1, 
-                    cot_type="a-f-G-M-F-Q",
-                    cot_how="m-g", 
-                    cot_callsign=item.ns, 
-                    cot_id="ugv_object", 
-                    team_name="Green", 
-                    team_role="Team Member",
-                    cot_lat=obj_latitude,
-                    cot_lon=obj_longitude ))                              
+                             
         
     def set_uid(self):
         """Set the UID using either a rosparam or the system uuid"""
@@ -137,11 +119,11 @@ class AtakBridge:
         try: # TODO Use a non-blocking read of the socket
             cotresponse = self.takserver.readcot(readtimeout=1) # This is a blocking read for 1 second.
             cot_xml = cotresponse[0]
-            rospy.logdebug("COT XML:\n%s" %(cot_xml))
+            rospy.loginfo("COT XML:\n%s" %(cot_xml))
             if (len(cot_xml)>1):
                 self.takmsg_tree = ET.fromstring(cot_xml)
         except:
-            rospy.logdebog("Read Cot failed: %s" % (sys.exc_info()[0]))
+            rospy.logdebug("Read Cot failed: %s" % (sys.exc_info()[0]))
 
     def parse_takmsg_grnd(self):
 #        etree = ET.tostring(self.takmsg_tree, 'utf-8')
@@ -153,7 +135,7 @@ class AtakBridge:
                 target_num = fiveline.attrib['fiveline_target_number']
                 # If this is a goto location then publish it as a go to goal.
                 # Assumes utm is the global frame.
-                if ('G99999' == target_num):
+                if ('SWATC' == target_num): # type into atak to move jackal to position 
                     this_uid = self.takmsg_tree.get("uid")
                     lat = self.takmsg_tree.find("./point").attrib['lat']
                     lon = self.takmsg_tree.find("./point").attrib['lon']
@@ -164,7 +146,7 @@ class AtakBridge:
                     goal_pose_stamped.header.frame_id = 'utm'   
                     goal_pose_stamped.pose.position.x = crnt_utm_e                    
                     goal_pose_stamped.pose.position.y = crnt_utm_n 
-                    goal_pose_stamped = self.tf1_listener.transformPose('husky/map', goal_pose_stamped) 
+                    goal_pose_stamped = self.tf1_listener.transformPose('map', goal_pose_stamped) 
                     goal_pose_stamped.pose.orientation.z = 0.0985357937255
                     goal_pose_stamped.pose.orientation.w = 0.995133507302                                    
 
@@ -173,16 +155,16 @@ class AtakBridge:
                     msg.goal_id.stamp = rospy.Time.now()
                     msg.goal_id.id = "ATAK GOTO"
                     msg.goal.region_center.header.stamp = msg.header.stamp
-                    msg.goal.region_center.header.frame_id = "husky/map"
+                    msg.goal.region_center.header.frame_id = "map"
                     msg.goal.region_center.pose = goal_pose_stamped.pose
                     msg.goal.radius = 3.75
                     msg.goal.angle_threshold = 3.108                                       
                     self.grnd_pub.publish(msg)
                       
                     marker = Marker()
-                    marker.header.frame_id = "husky/map"           
+                    marker.header.frame_id = "map"           
                     msg.header.stamp = rospy.Time.now()
-                    marker.ns = "husky"
+                    marker.ns = "SWATC"
                     marker.id = 0
                     marker.type = Marker.SPHERE
                     marker.action = Marker.ADD
