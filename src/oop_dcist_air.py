@@ -44,7 +44,7 @@ class AtakBridge:
     
     def __init__(self):
         self.robot_name          = rospy.get_param('~name', "husky")
-        self.my_team_name        = rospy.get_param('~team_name', 'Cyan') #Use one from ATAK which are colors  
+        self.my_team_name        = rospy.get_param('~team_name', 'Blue') #Use one from ATAK which are colors  
         self.my_team_role        = rospy.get_param('~team_role', 'Team Member') # Use one from ATAK
         self.tak_ip              = rospy.get_param('~tak_ip', '127.0.0.1') 
         self.tak_port            = rospy.get_param('~tak_port', '8088')
@@ -54,16 +54,21 @@ class AtakBridge:
         self.my_uid              = self.set_uid()
         self.zone='18T'
         self.takmsg_tree = ''
-        self.target_list = ["car", "Vehicle"]
+        self.target_list = ["0", "87", "2"] # 0-"person", 87-"teddy bear", 2-"car"
         self.tf1_listener = tf.TransformListener()
         self.tf1_listener.waitForTransform(self.global_frame, self.baselink_frame, rospy.Time(0), rospy.Duration(35.0))
+        
+        #used for debug
         self.marker_topic="/"+self.robot_name+"/atak/goal"
         self.vis_pub = rospy.Publisher(self.marker_topic, Marker, queue_size=10)
+        
         self.goal_topic="/"+self.robot_name+"/nav_goal/2d"        
         self.uav_pub = rospy.Publisher(self.goal_topic, PoseStamped, queue_size=10)
         
-        rospy.Subscriber("/husky/worldmodel_rviz/object_markers", MarkerArray, self.object_location_cb)
-        #rospy.Subscriber("/uav1/detection_localization/detections/out/local", Detection2DArray, self.object_location_cb)
+        #rospy.Subscriber("/husky/worldmodel_rviz/object_markers", MarkerArray, self.object_location_cb)
+        #rospy.Subscriber("/ranger11/detection_localization/out/detections/local", Detection2DArray, self.object_location_cb)
+        self.topic_target = "/"+self.robot_name+"/detection_localization/out/detections/local"
+        rospy.Subscriber(self.topic_target, Detection2DArray, self.object_location_cb)
         rospy.loginfo("Started ATAK Bridge with the following:\n\t\tCallsign: %s\n\t\tUID: %s\n\t\tTeam name: %s\n\t\tGlobal Frame: %s"
                     %(self.my_callsign,self.my_uid,self.my_team_name,self.global_frame))
         self.takserver = takcot() #TODO add a timeout and exit condition                                
@@ -71,12 +76,46 @@ class AtakBridge:
     def object_location_cb(self, data):        
         for detection in data.detections: 
             for result in detection.results:
-                if result.id in self.target_list:
+                if str(result.id) in self.target_list:
                     obj_pose_stamped = PoseStamped()
                     obj_pose_stamped.header = detection.header 
                     obj_pose_stamped.pose = result.pose.pose
                     obj_pose_utm = self.tf1_listener.transformPose("utm", obj_pose_stamped)
-                    (obj_latitude,obj_longitude) = UTMtoLL(23, obj_pose_utm.pose.position.y, obj_pose_utm.pose.position.x, self.zone) # 23 is WGS-84.          
+                    (obj_latitude,obj_longitude) = UTMtoLL(23, obj_pose_utm.pose.position.y, obj_pose_utm.pose.position.x, self.zone) # 23 is WGS-84.
+                if str(result.id) == str(0):
+                    self.takserver.send(mkcot.mkcot(cot_identity="neutral", 
+                        cot_stale = 1, 
+                        cot_type="a-f-G-M-F-Q",
+                        cot_how="m-g", 
+                        cot_callsign=result.id, 
+                        cot_id="human", 
+                        team_name="detector", 
+                        team_role="obj detector",
+                        cot_lat=obj_latitude,
+                        cot_lon=obj_longitude ))
+                elif str(result.id) == str(87):
+                    self.takserver.send(mkcot.mkcot(cot_identity="neutral", 
+                        cot_stale = 1, 
+                        cot_type="a-f-G-M-F-Q",
+                        cot_how="m-g", 
+                        cot_callsign=result.id, 
+                        cot_id="teddy bear", 
+                        team_name="detector", 
+                        team_role="obj detector",
+                        cot_lat=obj_latitude,
+                        cot_lon=obj_longitude ))
+                elif str(result.id) == str(2):
+                    self.takserver.send(mkcot.mkcot(cot_identity="neutral", 
+                        cot_stale = 1, 
+                        cot_type="a-f-G-M-F-Q",
+                        cot_how="m-g", 
+                        cot_callsign=result.id, 
+                        cot_id="car", 
+                        team_name="detector", 
+                        team_role="obj detector",
+                        cot_lat=obj_latitude,
+                        cot_lon=obj_longitude ))
+                else:
                     self.takserver.send(mkcot.mkcot(cot_identity="neutral", 
                         cot_stale = 1, 
                         cot_type="a-f-G-M-F-Q",
@@ -86,7 +125,8 @@ class AtakBridge:
                         team_name="detector", 
                         team_role="obj detector",
                         cot_lat=obj_latitude,
-                        cot_lon=obj_longitude ))                    
+                        cot_lon=obj_longitude ))
+                        
         
     def set_uid(self):
         """Set the UID using either a rosparam or the system uuid"""
@@ -162,7 +202,7 @@ class AtakBridge:
                 goal_pose_stamped.pose.position.x = crnt_utm_e                    
                 goal_pose_stamped.pose.position.y = crnt_utm_n 
                 msg = self.tf1_listener.transformPose(self.global_frame, goal_pose_stamped)           
-                msg.pose.position.z = 5.0            
+                msg.pose.position.z = 1.8            
                 self.uav_pub.publish(msg)           
                 rospy.loginfo("----- Recieved ATAK Message from UID: %s, saying move to lat/lon of %s, %s and map location %s, %s" %(this_uid,lat,lon, crnt_utm_e, crnt_utm_n))    
                 
@@ -180,8 +220,8 @@ class AtakBridge:
             team_name=self.my_team_name, 
             team_role=self.my_team_role,
             cot_lat=crnt_latitude,
-            cot_lon=crnt_longitude )  
-        self.takserver.send( my_cot)   
+            cot_lon=crnt_longitude )
+        self.takserver.send(my_cot)   
         #rospy.loginfo(my_cot) 
             
 if __name__ == '__main__':
@@ -196,10 +236,8 @@ if __name__ == '__main__':
             bridge.parse_takmsg_air()
             bridge.robot_pose_to_tak()
         
-        
             rate.sleep()
-        
-        
+            
         bridge.takserver_shutdown()
     except rospy.ROSInterruptException:
         pass        

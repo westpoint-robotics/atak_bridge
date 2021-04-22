@@ -1,0 +1,55 @@
+<launch>
+  <arg name="vehicle_namespace" default="ranger_11"/>
+
+
+
+<!--rosrun tf tf_echo world ground_truth/uav1/base-->
+<!--- Translation: [0.019, 2.996, -2.417]-->
+<!--- Rotation: in Quaternion [-0.028, 0.043, -0.705, 0.707]-->
+<!--            in RPY (radian) [-0.101, 0.021, -1.570]-->
+<!--            in RPY (degree) [-5.815, 1.231, -89.953]-->
+<!--<node type="static_transform_publisher" pkg="tf2_ros" name="dummyuas_utm_frame" args="587361 4582574 0 0 0 0 utm uav1/odom" />-->
+
+<!-- TH1136  41.389974, -73.955016 37 degrees magnetic     18T 587359.62mE 4582570.941mN -->
+<!-- Pt1 18T 587360.88mE  4582571.20mN -->
+<!-- Pt2 18T 587361.70mE  4582572.32mN -->
+
+
+<!-- 64.5 deg = 1.125737 -->
+<!--River Courts  41.39058,  -73.95323  	18T 587513.65mE 4582648.09mN-->
+<!--River Courts Centered 41.3913870, -73.9529561    18T   587535.658  4582735.093-->
+
+<!--<node type="static_transform_publisher" pkg="tf2_ros" name="dummyuas_utm_frame" args="587513.639 4582648.039 0 0.018, 0.101, 0.022 utm uav1/odom" />-->
+<node type="static_transform_publisher" pkg="tf2_ros" name="dummyuas_utm_frame" args="587360.88 4582571.20 0 1.125737 0 0 utm $(arg vehicle_namespace)/odom" />
+
+
+
+  <!-- Settings for ATAK communications -->
+  <arg name="callsign" default="$(arg vehicle_namespace)" doc="The callsign used by the robot on the ATAK system"/>
+  <arg name="team_name" default="Blue" doc="The Team Name used by the robot on the ATAK system"/>
+  <arg name="team_role" default="Team Member" doc="The Team Role used by the robot on the ATAK system"/>
+  <arg name="tak_ip" default="10.13.0.10" doc="The IP address of the ATAK server"/>
+  <arg name="tak_port" default="8088" doc="The Port number on the ATAK server to connect to"/>
+  <arg name="baselink_frame" default="/$(arg vehicle_namespace)/base_link" doc="The base link frame of the robot"/>
+  <arg name="global_frame" default="$(arg vehicle_namespace)/odom" doc="The global coordinate frame used to send global locations to ATAK"/>
+
+<!-- 
+41.389974, -73.955016 37 degrees magnetic TH1136 
+41.39058,  -73.95323  0  degrees magnetic River Courts
+-->
+
+  <group ns="$(arg vehicle_namespace)/atak">   
+    <node name="atak_bridge" pkg="atak_bridge" type="oop_dcist_air.py" output="screen">
+        <param name="name" value="$(arg vehicle_namespace)" />
+        <param name="callsign" value="$(arg callsign)" />
+        <param name="team_name" value="$(arg team_name)" />
+        <param name="team_role" value="$(arg team_role)" />
+        <param name="tak_ip" value="$(arg tak_ip)" />
+        <param name="tak_port" value="$(arg tak_port)" />
+        <param name="baselink_frame" value="$(arg baselink_frame)" />
+        <param name="global_frame" value="$(arg global_frame)" />
+    </node>
+
+  </group> 
+
+</launch>
