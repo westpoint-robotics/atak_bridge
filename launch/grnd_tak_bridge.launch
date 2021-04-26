@@ -12,8 +12,15 @@
 <!--River Courts  41.39058,  -73.95323  	18T 587513.65mE 4582648.09mN-->
 <!--River Courts Centered 41.3913870, -73.9529561    18T   587535.658  4582735.093-->
 <!--<node type="static_transform_publisher" pkg="tf2_ros" name="dummy2_utm_frame" args="587359.62 4582570.941 0 -1.193, 0.102, 0.127 utm $(arg name)/map" />-->
+<!-- 1.125737 is 64.5 degrees, aiming down the hallway of Thayer Hall from east = 0 degrees. -->
+
+<!-- 587360.88 4582571.20 is in the black square in Thayer 1136 -->
+<!-- <node type="static_transform_publisher" pkg="tf2_ros" name="dummy2_utm_frame" args="587360.88 4582571.20 0 1.125737 0 0 utm $(arg name)/map" /> -->
+
+<!-- 587361.70 4582572.32 is 1 meter in front of the black square in Thayer 1136 (in Thayer coordinate frame)-->
+<node type="static_transform_publisher" pkg="tf2_ros" name="dummy2_utm_frame" args="587361.70 4582572.32 0 1.125737 0 0 utm $(arg name)/map" />
 <!--<node type="static_transform_publisher" pkg="tf2_ros" name="dummy2_utm_frame" args="587512.27 4582645.031 0 -1.193, 0.102, 0.127 utm $(arg name)/map" />-->
-<node type="static_transform_publisher" pkg="tf2_ros" name="dummy2_utm_frame" args="587532.658 4582735.093 -2.54 -1.57 0 0 utm $(arg name)/map" />
+<!-- <node type="static_transform_publisher" pkg="tf2_ros" name="dummy2_utm_frame" args="587532.658 4582735.093 -2.54 -1.57 0 0 utm $(arg name)/map" /> -->
 
 
   <!-- Settings for ATAK communications -->

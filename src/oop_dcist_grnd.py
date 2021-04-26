@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+
 from __future__ import (absolute_import, division,
                         print_function, unicode_literals)
 
@@ -29,6 +30,8 @@ from geometry_msgs.msg import PoseStamped, Pose
 from geometry_msgs.msg import Vector3Stamped
 from arl_nav_msgs.msg import GotoRegionActionGoal # Used to publish target location as a goto goal
 from nav_msgs.msg import Odometry
+from arl_perception_msgs.msg import DetectedObjectArray
+
 #from vision_msgs.msg import Detection2DArray #TODO this message is what is used in mavplatform, does not exist in phoenix
 
 from takpak.mkcot import mkcot
@@ -54,7 +57,8 @@ class AtakBridge:
         self.my_uid              = self.set_uid()
         self.zone='18T'
         self.takmsg_tree = ''
-        self.target_list = ["car", "Vehicle"]
+        self.target_list = ["people"]#["car", "Vehicle"]
+        self.msg_id_num=0
         self.tf1_listener = tf.TransformListener()
         self.tf1_listener.waitForTransform(self.global_frame, self.baselink_frame, rospy.Time(0), rospy.Duration(35.0))
         self.marker_topic="/"+self.robot_name+"/atak/goal"
@@ -64,26 +68,30 @@ class AtakBridge:
         self.goal_topic="/"+self.robot_name+"/goto_region/goal"
         self.grnd_pub = rospy.Publisher(self.goal_topic, GotoRegionActionGoal, queue_size=10)
         
-        rospy.Subscriber("/husky/worldmodel_rviz/object_markers", MarkerArray, self.grnd_object_cb)
+        # rospy.Subscriber("/husky/worldmodel_rviz/object_markers", MarkerArray, self.grnd_object_cb)
+        rospy.Subscriber("/husky/detected_objects", DetectedObjectArray, self.grnd_object_cb)
+        # [visualization_msgs/MarkerArray] vs. [arl_perception_msgs/DetectedObjectArray]
         #rospy.Subscriber("/uav1/detection_localization/detections/out/local", Detection2DArray, self.object_location_cb)
         rospy.loginfo("Started ATAK Bridge with the following:\n\t\tCallsign: %s\n\t\tUID: %s\n\t\tTeam name: %s\n\t\tGlobal Frame: %s"
                     %(self.my_callsign,self.my_uid,self.my_team_name,self.global_frame))
         self.takserver = takcot() #TODO add a timeout and exit condition                    
         
-    def grnd_object_cb(self, data):       
-        for item in data.markers:
-            if item.ns in self.target_list:
+    def grnd_object_cb(self, data):
+        # rospy.loginfo(data)
+        for item in data.objects:
+            if str(item.classification.type.name) in self.target_list:
+                # rospy.loginfo(item.classification.type.name)
                 obj_pose_stamped = PoseStamped()
-                obj_pose_stamped.header = item.header  
-                obj_pose_stamped.header.stamp = rospy.Time.now()                       
-                obj_pose_stamped.pose = item.pose
+                obj_pose_stamped.header = item.pose.header
+                obj_pose_stamped.header.stamp = item.pose.header.stamp #rospy.Time.now()                       
+                obj_pose_stamped.pose = item.pose.pose
                 obj_pose = self.tf1_listener.transformPose("utm", obj_pose_stamped)        
                 (obj_latitude,obj_longitude) = UTMtoLL(23, obj_pose.pose.position.y, obj_pose.pose.position.x, self.zone) # 23 is WGS-84.  
                 self.takserver.send(mkcot.mkcot(cot_identity="neutral", 
                     cot_stale = 1, 
                     cot_type="a-f-G-M-F-Q",
                     cot_how="m-g", 
-                    cot_callsign=item.ns, 
+                    cot_callsign=item.classification.type.name, 
                     cot_id="ugv_object", 
                     team_name="Green", 
                     team_role="Team Member",
@@ -137,11 +145,12 @@ class AtakBridge:
         try: # TODO Use a non-blocking read of the socket
             cotresponse = self.takserver.readcot(readtimeout=1) # This is a blocking read for 1 second.
             cot_xml = cotresponse[0]
-            rospy.logdebug("COT XML:\n%s" %(cot_xml))
             if (len(cot_xml)>1):
+                rospy.loginfo("COT XML:\n%s" %(cot_xml))
                 self.takmsg_tree = ET.fromstring(cot_xml)
+                bridge.parse_takmsg_grnd()
         except:
-            rospy.logdebog("Read Cot failed: %s" % (sys.exc_info()[0]))
+            rospy.logdebug("Read Cot failed: %s" % (sys.exc_info()[0]))
 
     def parse_takmsg_grnd(self):
 #        etree = ET.tostring(self.takmsg_tree, 'utf-8')
@@ -171,12 +180,14 @@ class AtakBridge:
                     msg = GotoRegionActionGoal()                
                     msg.header.stamp = rospy.Time.now()
                     msg.goal_id.stamp = rospy.Time.now()
-                    msg.goal_id.id = "ATAK GOTO"
+                    
+                    msg.goal_id.id = "ATAK GOTO " + str(self.msg_id_num)
+                    self.msg_id_num += 1
                     msg.goal.region_center.header.stamp = msg.header.stamp
                     msg.goal.region_center.header.frame_id = "husky/map"
                     msg.goal.region_center.pose = goal_pose_stamped.pose
-                    msg.goal.radius = 3.75
-                    msg.goal.angle_threshold = 3.108                                       
+                    msg.goal.radius = 0.75 #3.75
+                    msg.goal.angle_threshold = 6.28 #3.108                                       
                     self.grnd_pub.publish(msg)
                       
                     marker = Marker()
@@ -195,10 +206,10 @@ class AtakBridge:
                     self.vis_pub.publish( marker )
                     
                              
-                    rospy.loginfo("----- Recieved ATAK Message from UID: %s, saying move to lat/lon of %s, %s and map location %s, %s" %(this_uid,lat,lon, 
+                    rospy.loginfo("\n\n----- Recieved ATAK Message from UID: %s, saying move to lat/lon of %s, %s and map location %s, %s\n\n" %(this_uid,lat,lon, 
                                     msg.goal.region_center.pose.position.x, msg.goal.region_center.pose.position.y)) 
         except Exception, e:
-            rospy.logwarn("----- Recieved ATAK Message and have an error of: "+ str(e)) 
+            rospy.logwarn("\n\n----- Recieved ATAK Message and have an error of: "+ str(e) + '\n\n') 
                 
     def robot_pose_to_tak(self):
         # Get current position in global frame        
@@ -207,7 +218,7 @@ class AtakBridge:
         # Send the current position to the TAK Server  
         #rospy.loginfo("latlong: %.7f,%.7f baselinkg is: %s"%(crnt_latitude,crnt_longitude, self.baselink_frame))    
         my_cot = mkcot.mkcot(cot_identity="friend", 
-            cot_stale = 1, 
+            cot_stale = 0.1, 
             cot_type="a-f-G-M-F-Q",
             cot_how="m-g", 
             cot_callsign=self.my_callsign, 
@@ -229,7 +240,7 @@ if __name__ == '__main__':
         rate = rospy.Rate(loop_hz) # The rate of the loop is no faster than then the timeout.
         while not rospy.is_shutdown():
             bridge.takserver_read()
-            bridge.parse_takmsg_grnd()
+
             bridge.robot_pose_to_tak()
         
         
