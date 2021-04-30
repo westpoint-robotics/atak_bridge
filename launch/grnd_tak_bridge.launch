@@ -11,8 +11,8 @@
 <!--River Courts  41.39058,  -73.95323  	18T 587513.65mE 4582648.09mN-->
 <!--River Courts Centered 41.3913870, -73.9529561    18T   587535.658  4582735.093-->
 <!--<node type="static_transform_publisher" pkg="tf2_ros" name="dummy2_utm_frame" args="587359.62 4582570.941 0 -1.193, 0.102, 0.127 utm $(arg name)/map" />-->
-<!--<node type="static_transform_publisher" pkg="tf2_ros" name="dummy2_utm_frame" args="587512.27 4582645.031 0 -1.193, 0.102, 0.127 utm $(arg name)/map" />-->
-<node type="static_transform_publisher" pkg="tf2_ros" name="dummy2_utm_frame" args="587532.658 4582735.093 -2.54 0 0 0 utm map" />
+<!--<node type="static_transform_publisher" pkg="tf2_ros" name="dummy2_utm_frame" args="587512.27 4582645.031 0 -1.193, 0.102, 0.127 utm $(arg name)/map" />z-->
+<node type="static_transform_publisher" pkg="tf2_ros" name="dummy2_utm_frame" args="587512.27 4582645.031 -2.54 0 0 0 utm map" />
 <node type="static_transform_publisher" pkg="tf2_ros" name="dummy2_odom_frame" args="0 0 0 0 0 0 map odom" />
 
   <!-- Settings for ATAK communications -->
@@ -21,6 +21,8 @@
   <arg name="team_role" default="Team Member" doc="The Team Role used by the robot on the ATAK system"/>
   <arg name="tak_ip" default="10.13.0.10" doc="The IP address of the ATAK server"/>
   <arg name="tak_port" default="8088" doc="The Port number on the ATAK server to connect to"/>
+<!--  <arg name="tak_ip" default="192.168.10.12" doc="The IP address of the ATAK server"/>-->
+<!--  <arg name="tak_port" default="8087" doc="The Port number on the ATAK server to connect to"/>-->
   <arg name="baselink_frame" default="base_link" doc="The base link frame of the robot"/>
   <arg name="global_frame" default="odom" doc="The global coordinate frame used to send global locations to ATAK"/>
 

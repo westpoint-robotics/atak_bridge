@@ -36,29 +36,32 @@ class takcot():
 
     def __init__(self, logger=None):
         # use existing logger
+
         self.logger = logger or logging.getLogger(__name__)
 
-        self.logger.debug(__name__ + " self.logger logging started")
+        print(__name__ + " self.logger logging started")
 
         self.sock = None
         
     def open(self, ip_address, port=8087):
-        self.logger.debug(__name__ + " Opening: " + ip_address + ":" + str(port))
+        print(__name__ + " Opening: " + ip_address + ":" + str(port))
         try:
             self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.logger.debug(__name__ + " socket created")
+            print(__name__ + " socket created")
         except:
-            self.logger.error(__name__ + " socket create failed")
+            print(__name__ + " socket create failed")
             exit()
         
-        self.logger.debug(__name__ + " Opening Socket")
+        print(__name__ + " Opening Socket")
+
         try:
             conn = self.sock.connect((ip_address, port))
-            #self.logger.debug("Connect Return is:")
-            #self.logger.debug(conn)
+            #print("Connect Return is:")
+            #print(conn)
         except:
-            self.logger.error(__name__ + " Cannot connect to " + str(ip_address) + ":" + str(port))
+            print(__name__ + " Cannot connect to " + str(ip_address) + ":" + str(port))
             self.sock = None
+
         return self.sock
         
     def close(self):
@@ -66,45 +69,45 @@ class takcot():
             #closereturn = self.sock.shutdown(1)
             #time.sleep(0.2)
             closereturn = self.sock.close()
-            self.logger.debug(__name__ + "takserver connection closed")
+            print(__name__ + "takserver connection closed")
         except:
             closereturn = 0
-            self.logger.warning(__name__ + " Socket Close failed")
+            print(__name__ + " Socket Close failed")
         return closereturn
 
     def send(self, cotdata, sleeptime=.075 ):
-        self.logger.debug(cotdata)
+        print(cotdata)
         try:
-            self.logger.debug(__name__ + " Socket fileno: " + str(self.sock.fileno()))
+            print(__name__ + " Socket fileno: " + str(self.sock.fileno()))
             if self.sock.fileno() == -1:
-                self.logger.error(__name__ + " Socket Closed")
+                print(__name__ + " Socket Closed")
                 raise SocketError(__name__ + "Socket Closed")
         except:
-            self.logger.error(__name__ +  " Could not get socket status")
+            print(__name__ +  " Could not get socket status")
             raise SocketError(__name__ + "could not get socket status")
         sentdata=""
         try:
             self.sock.settimeout(0.5) # 0 is non-blocking
             sentdata = self.sock.send(cotdata)
             if sentdata != len(cotdata):
-                self.logger.error(__name__ +  " Socket Send mismatch " + str(sentdata) + " " +str(len(cotdata)))
+                print(__name__ +  " Socket Send mismatch " + str(sentdata) + " " +str(len(cotdata)))
                 raise SocketError(__name__ + " Socket Send mismatch " + str(sentdata) + " " +str(len(cotdata)))
-            #self.logger.debug("sent")
+            #print("sent")
 
         except socket.timeout:
-            self.logger.error(__name__ +  " Socket Timeout")
+            print(__name__ +  " Socket Timeout")
             raise SocketError(__name__ + "Socket Timeout") # The sole argument to raise indicates the exception to be raised
             
         except:
-            self.logger.warning(__name__ + " Send data failed")
+            print(__name__ + " Send data failed")
             raise SocketError(__name__ + "Send Failed")
         # Now read what was sent
         #try:
         #    self.sock.settimeout(1)
         #    rcvdata = self.sock.recv(2048)
-        #    self.logger.debug("pushTCP Rcv Data:" + str(rcvdata))
+        #    print("pushTCP Rcv Data:" + str(rcvdata))
         #except:
-        #    self.logger.warning("push_tcp: Rcv data failed")
+        #    print("push_tcp: Rcv data failed")
         #    return 0
         # Set a minimum delay so the server does not get overrun    
         #self.time.sleep(self.sleeptime)  
@@ -143,7 +146,7 @@ class takcot():
                 return response
 
             except KeyboardInterrupt:
-                self.logger.debug("Kbd Interrupt during read")
+                print("Kbd Interrupt during read")
                 raise
 
             except:
@@ -222,8 +225,8 @@ class takcot():
             else:
                 # Must have had an incomplete cot fragment
                 # Ignore the invalid CoT
-                self.logger.warning(__name__ + " Not a valid CoT")
-                self.logger.warning(cot_xml)
+                print(__name__ + " Not a valid CoT")
+                print(cot_xml)
                 return "", frag
 
         else:

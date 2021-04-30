@@ -23,7 +23,7 @@ import logging
 import rospy
 import rospkg
 import tf
-
+import time
 from visualization_msgs.msg import MarkerArray, Marker
 from geometry_msgs.msg import PoseStamped, Pose
 from geometry_msgs.msg import Vector3Stamped
@@ -197,7 +197,7 @@ class AtakBridge:
             cot_stale = 1, 
             cot_type="a-f-G-M-F-Q",
             cot_how="m-g", 
-            cot_callsign=self.my_callsign, 
+            cot_callsign=" ", 
             cot_id=self.my_uid, 
             team_name=self.my_team_name, 
             team_role=self.my_team_role,
@@ -205,21 +205,82 @@ class AtakBridge:
             cot_lon=crnt_longitude )  
         self.takserver.send( my_cot)   
         #rospy.loginfo(my_cot) 
-            
-        
+        #copy my_cot
+
+
+    def send_yolo_friend(self):
+        #IF NO KNEW DETECTS, DO NOTHING
+        #insert timer IAW yolo incoming files
+        #ELSE
+        # Get current position in global frame
+        f_in = open("/home/user1/catkin_ws/src/atak_bridge/src/yolo_data.txt", "r")
+        yolo_data = f_in.readline()
+        f_in.close()
+        if yolo_data[0] != '0':
+            crnt_pose = self.tf1_listener.lookupTransform('utm', self.baselink_frame, rospy.Time(0))
+            (crnt_latitude,crnt_longitude) = UTMtoLL(23, crnt_pose[0][1], crnt_pose[0][0], self.zone) # 23 is WGS-84.                      
+            # Send the current position to the TAK Server  
+            #rospy.loginfo("latlong: %.7f,%.7f baselinkg is: %s"%(crnt_latitude,crnt_longitude, self.baselink_frame))    
+            my_cot = mkcot.mkcot(cot_identity="friend", 
+                cot_stale = .167, # Time in seconds before message is stale
+                cot_type="a-f-G-M-F-Q", #change f to h to make hostile, n is neutral, G is ground
+                cot_how="m-g", 
+                cot_callsign= yolo_data, #if change callsign, new detect; if same, updates
+                cot_id= yolo_data, #One of these shows up (id or callsign --> make this detection certainty)
+#                cot_id= "trevor_jacka0l",
+                team_name=self.my_team_name, #color of icon --> change to string (check on ATAK phone for color options)
+                team_role=self.my_team_role, #TL or SL or MOS etc
+                cot_lat=crnt_latitude,
+                cot_lon=crnt_longitude )  
+            self.takserver.send( my_cot)
+            time.sleep(2)
+
+
+    def send_yolo_deployable(self):
+        f_in = open("/home/user1/catkin_ws/src/atak_bridge/src/yolo_deploy_data.txt", "r")
+        yolo_data = f_in.readline()
+        f_in.close()
+        if yolo_data[0] != '0':
+            crnt_pose = self.tf1_listener.lookupTransform('utm', self.baselink_frame, rospy.Time(0))
+            (crnt_latitude,crnt_longitude) = UTMtoLL(23, crnt_pose[0][1], crnt_pose[0][0], self.zone) # 23 is WGS-84. 
+#            (crnt_latitude,crnt_longitude) = UTMtoLL(18, 582458.27, 4575381.031, self.zone) # 23 is WGS-84.                                           
+            # Send the current position to the TAK Server  
+            #rospy.loginfo("latlong: %.7f,%.7f baselinkg is: %s"%(crnt_latitude,crnt_longitude, self.baselink_frame))    
+            my_cot = mkcot.mkcot(cot_identity="friend", 
+                cot_stale = .167, # Time in seconds before message is stale
+                cot_type="a-f-G-M-F-Q", #change f to h to make hostile, n is neutral, G is ground
+                cot_how="m-g", 
+                cot_callsign= yolo_data, #if change callsign, new detect; if same, updates
+                cot_id= "deployable", #One of these shows up (id or callsign --> make this detection certainty)
+                team_name=self.my_team_name, #color of icon --> change to string (check on ATAK phone for color options)
+                team_role=self.my_team_role, #TL or SL or MOS etc
+#                <!--<node type="static_transform_publisher" pkg="tf2_ros" name="dummy2_utm_frame" args="587512.27 4582645.031 0 -1.193, 0.102, 0.127 utm $(arg name)/map" />-->z
+                cot_lat= 41.3904,
+                cot_lon= -73.956 )
+#                cot_lat=crnt_latitude,
+#                cot_lon=crnt_longitude )
+            self.takserver.send( my_cot)
+            time.sleep(2)        
+
 if __name__ == '__main__':
     try:
         rospy.init_node("atak_bridge")
         bridge = AtakBridge()
         bridge.takserver_start()
         loop_hz = 10
+        #count = 0
         rate = rospy.Rate(loop_hz) # The rate of the loop is no faster than then the timeout.
         while not rospy.is_shutdown():
             bridge.takserver_read()
             bridge.parse_takmsg_grnd()
             bridge.robot_pose_to_tak()
-        
-        
+            bridge.send_yolo_friend()
+            bridge.send_yolo_deployable()
+            #if count > 50:
+            #    #some_command
+            #    count = 0
+            #else:
+            #    count += 1
             rate.sleep()
         
         
