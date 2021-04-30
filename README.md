@@ -3,6 +3,7 @@
 - Based on work found at: https://github.com/pinztrek/takpak.git.
     - The python code found in the takpak directory is modified versions of this code.
     - Some of the python code found outside the takpak directory is based on example code provided by takpak.  
+- ATAK Tutorials at: https://www.youtube.com/playlist?list=PLD4gdaBHX0b7GpPkuy0mbPaCw9kG3YgfB
 
 ## Requirement
 - These nodes require a transform from a global frame such as 'utm' to the robot's base_link frame.   
