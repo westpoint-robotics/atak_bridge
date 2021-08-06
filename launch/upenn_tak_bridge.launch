@@ -1,0 +1,103 @@
+<launch>
+  <arg name='group_name' default='upenn_ugvs'/>
+  <arg name='robot_name1' default='callisto'/>
+  <arg name='robot_name2' default='io'/>
+  
+<!--rosrun tf tf_echo world ground_truth/$(arg name)/base-->
+<!--- Translation: [0.019, 2.996, -2.417]-->
+<!--- Rotation: in Quaternion [-0.028, 0.043, -0.705, 0.707]-->
+<!--            in RPY (radian) [-0.101, 0.021, -1.570]-->
+<!--            in RPY (degree) [-5.815, 1.231, -89.953]-->
+<!--<node type='static_transform_publisher' pkg='tf2_ros' name='dummyuas_utm_frame' args='587361 4582574 0 0 0 0 utm $(arg name)/odom' />-->
+<!--River Courts  41.39058,  -73.95323  	18T 587513.65mE 4582648.09mN-->
+<!--River Courts Centered 41.3913870, -73.9529561    18T   587535.658  4582735.093-->
+<!--<node type='static_transform_publisher' pkg='tf2_ros' name='dummyuas_utm_frame' args='587513.639 4582648.039 0 0.018, 0.101, 0.022 utm $(arg name)/odom' />-->
+<!--  <node type='static_transform_publisher' pkg='tf2_ros' name='$(arg robot_name)_map_frame' args='587537.658 4582735.093 -2.417 0 0 0 map robot' /> -->
+
+
+<!-- Pennovation -->
+  <node name='utm_frame' pkg='tf2_ros' type='static_transform_publisher' args='482726.05 4421088.81 0 0 0 0 utm map' /> 
+<!-- upenn ground station position: -->
+<!-- upenn robot position: 482726.05 4421088.81 -->
+  <arg name="zone" default="18S" doc="UTM zone"/> 
+
+<!-- 
+41.389974, -73.955016 37 degrees magnetic TH1136 
+41.39058,  -73.95323  0  degrees magnetic River Courts
+-->
+
+  <!-- Settings for ATAK communications -->
+<!--  <arg name='callsign' default='$(arg name)' doc='The callsign used by the robot on the ATAK system'/> -->
+  <arg name='callsign' default='Callsign' doc='The callsign used by the robot on the ATAK system'/>
+  <arg name='team_name' default='Blue' doc='The Team Name used by the robot on the ATAK system'/>
+  <arg name='team_role' default='Team Member' doc='The Team Role used by the robot on the ATAK system'/>
+  <arg name="tak_ip" default="10.13.0.10" doc="The IP address of the ATAK server"/>
+  <arg name="tak_port" default="8088" doc="The Port number on the ATAK server to connect to"/>
+
+<!-- (USMA) Server Address: 10.13.0.10
+        Server Port: 8088 -->
+
+<!-- (ARL) Server Address: 204.48.30.216 
+        Server Port: 8088 -->
+
+  <!-- UGV -->
+<!--  <arg name='map_frame' default='map' doc='The global coordinate frame used to send global locations to ATAK'/> --> 
+<!-- <arg name='map_img_frame' default='map_img' doc='The base link frame of the robot'/> -->
+
+  <arg name='baselink_frame1' default='robot_$(arg robot_name1)' doc='The base link frame of the robot'/>
+  <arg name='baselink_frame2' default='robot_$(arg robot_name2)' doc='The base link frame of the robot'/>
+  <arg name='global_frame' default='map' doc='The global coordinate frame used to send global locations to ATAK'/>
+
+
+  <group ns='$(arg group_name)/dynamic_tf'>
+  
+    <node name='$(arg robot_name1)' pkg='atak_bridge' type='dynamic_tf2.py' output='screen'>
+        <param name='robot_name' value='$(arg robot_name1)' />
+        <param name='baselink_frame' value='$(arg baselink_frame1)' />
+        <param name='global_frame' value='$(arg global_frame)' />
+    </node>  
+    
+    <node name='$(arg robot_name2)' pkg='atak_bridge' type='dynamic_tf2.py' output='screen'>
+        <param name='robot_name' value='$(arg robot_name2)' />
+        <param name='baselink_frame' value='$(arg baselink_frame2)' />
+        <param name='global_frame' value='$(arg global_frame)' />
+    </node>
+       
+  </group>
+
+  
+  <group ns='$(arg group_name)/atak'>
+  
+    <node ns='$(arg robot_name1)' name='atak_bridge_upenn' pkg='atak_bridge' type='oop_dcist_upenn.py' output='screen'>
+        <param name='group_name' value='$(arg group_name)' />
+<!--        <param name='group_name' value='$(arg group_name)' /> -->
+        <param name='robot_name' value='$(arg robot_name1)' />
+        <param name='uid' value='upenn_$(arg robot_name1)_uid' />
+        <param name='callsign' value='$(arg robot_name1)' />
+        <param name='team_name' value='$(arg team_name)' />
+        <param name='team_role' value='$(arg team_role)' />
+        <param name='tak_ip' value='$(arg tak_ip)' />
+        <param name='tak_port' value='$(arg tak_port)' />
+        <param name='baselink_frame' value='$(arg baselink_frame1)' />
+        <param name='global_frame' value='$(arg global_frame)' />
+        <param name='zone' value='$(arg zone)' />
+<!--        <param name='map_img_frame' value='$(arg map_img_frame)' /> -->
+    </node>
+    
+    <node ns='$(arg robot_name2)' name='atak_bridge_upenn' pkg='atak_bridge' type='oop_dcist_upenn.py' output='screen'>
+        <param name='group_name' value='$(arg group_name)' />
+        <param name='robot_name' value='$(arg robot_name2)' />
+        <param name='uid' value='upenn_$(arg robot_name2)_uid' />
+        <param name='callsign' value='$(arg robot_name2)' />
+        <param name='team_name' value='$(arg team_name)' />
+        <param name='team_role' value='$(arg team_role)' />
+        <param name='tak_ip' value='$(arg tak_ip)' />
+        <param name='tak_port' value='$(arg tak_port)' />
+        <param name='baselink_frame' value='$(arg baselink_frame2)' />
+        <param name='global_frame' value='$(arg global_frame)' />
+        <param name='zone' value='$(arg zone)' />    
+    </node>
+    
+  </group>  
+
+</launch>
