@@ -8,6 +8,7 @@ import time
 import uuid
 import socket
 import numpy as np
+import math
 
 import json
 import xml.etree.ElementTree as ET
@@ -29,6 +30,9 @@ from takpak.mkcot import mkcot
 from takpak.takcot import takcot
 
 from LatLongUTMconversion import LLtoUTM, UTMtoLL
+
+
+from scipy.spatial.transform import Rotation
 
 #TODO Investigate handling of TAK messages arriving faster than being processed by this code.
 #TODO Find a sufficient answer to send duplicate targets. Seeing 2 tgts and reporting one, and the other way around.
@@ -56,7 +60,6 @@ class AtakBridge:
 #        self.start_arl_lat   = 39.476528 
 #        self.start_arl_lon   = -76.083900
         
-        
         self.takmsg_tree = ''
         self.target_list = ["person", "car", "boat", "8"]
         self.tf1_listener = tf.TransformListener()
@@ -80,8 +83,7 @@ class AtakBridge:
                     obj_pose_stamped = PoseStamped()
                     obj_pose_stamped.header = detection.header 
                     obj_pose_stamped.pose = result.pose.pose
-                    obj_pose_utm = self.tf1_listener.transformPose("utm", obj_pose_stamped)
-                    
+                    obj_pose_utm = self.tf1_listener.transformPose("utm", obj_pose_stamped)             
                     
                     # *****
                     (zone,start_utm_x,start_utm_y) = LLtoUTM(23, self.start_lat, self.start_lon)
@@ -161,10 +163,14 @@ class AtakBridge:
         fiveline = self.takmsg_tree.find("./detail/fiveline")
         #rospy.loginfo("fiveline:%s" %fiveline)
         if not(fiveline in (-1, None)):
-            target_num = fiveline.attrib['fiveline_target_number']
+            tgt_num = fiveline.attrib['fiveline_target_number']
             # If this is a goto location then publish it as a go to goal.
             # Assumes utm is the global frame.
-            if ('99999' == target_num):
+            rospy.loginfo('------------------')
+            rospy.loginfo(tgt_num)
+            
+            # Input: 'U99' + 'desired heading angle (3 digits)'                        
+            if (tgt_num[0:3] == 'U99'):
                 try:
                     this_uid = self.takmsg_tree.get("uid")
                     tgt_lat = self.takmsg_tree.find("./point").attrib['lat']
@@ -172,55 +178,76 @@ class AtakBridge:
                 except Exception as e:
                     rospy.logwarn("----- Recieved ATAK Message and it is not a move to command -----"+ str(e))
 
+
                 (tgt_zone, tgt_utm_e, tgt_utm_n) = LLtoUTM(23, float(tgt_lat), float(tgt_long))
                 
-                # ******
                 (start_zone, start_utm_x, start_utm_y) = LLtoUTM(23, float(self.start_lat), float(self.start_long))
-#                rospy.loginfo('------%s, %s' %(start_utm_x, start_utm_y))       
 
-
-                # convert 
+                #
                 tgt_utm_x = tgt_utm_e - start_utm_x
                 tgt_utm_y = tgt_utm_n - start_utm_y
                                
-#                rospy.loginfo("%f %f" %(tgt_utm_x, tgt_utm_y))
+                rospy.loginfo("%f, %f" %(tgt_utm_x, tgt_utm_y))
                 
                 goal_pose_stamped = PoseStamped()
                 goal_pose_stamped.header.stamp = rospy.Time.now()
                 goal_pose_stamped.header.frame_id = 'utm'
                 goal_pose_stamped.pose.position.x = tgt_utm_x
                 goal_pose_stamped.pose.position.y = tgt_utm_y
-
-                msg = self.tf1_listener.transformPose(self.global_frame, goal_pose_stamped) # ???                
-                # Target Assignment
+                
+                # utm >> odom
+                msg = self.tf1_listener.transformPose(self.global_frame, goal_pose_stamped)
+                
+                # Target Assignment              
                 msg.pose.position.x = tgt_utm_x
                 msg.pose.position.y = tgt_utm_y
+                #TODO: allow to change alt by using tgt_num
                 msg.pose.position.z = 2.0
+                               
+                #caluclate current position
+                crnt_pose = self.tf1_listener.lookupTransform('utm', self.baselink_frame, rospy.Time(0))
+                crnt_utm_x = crnt_pose[0][0]
+                crnt_utm_y = crnt_pose[0][1]
+ 
                 
-                #TODO
-                #msg.pose.rotation.w
-                #msg.pose.rotation.x
-                #msg.pose.rotation.y
-                #msg.pose.rotation.z
+                # Three digits after 'U99' is used to control the heading angle
+                # E = 000, W = 180, S = 270, N = 90
+                if (tgt_num[0:3] == 'U99') and (int(tgt_num[3:6]) < 360):
+#                    rospy.loginfo('+++TURNING+++')
+                    rot = Rotation.from_euler('xyz', [0, 0, int(tgt_num[3:6])], degrees=True)
+                    rot_quat = rot.as_quat()
+#                    rospy.loginfo('++++++++++ yaw: %f , z: %f, w: %f' %(yaw, rot_quat[2], rot_quat[3]))
+                    msg.pose.position.x = crnt_utm_x - start_utm_x
+                    msg.pose.position.y = crnt_utm_y - start_utm_y
+                    msg.pose.orientation.z = rot_quat[2]
+                    msg.pose.orientation.w = rot_quat[3]
 
-
+                else:                
+                    #calculate heading angle
+                    x_yaw = tgt_utm_e - crnt_utm_x
+                    y_yaw = tgt_utm_n - crnt_utm_y
+                    yaw = math.atan2(y_yaw,x_yaw)/math.pi*180
+                    rot = Rotation.from_euler('xyz', [0, 0, yaw], degrees=True)
+                    rot_quat = rot.as_quat()
+#                    rospy.loginfo('++++++++++ yaw: %f , z: %f, w: %f' %(yaw, rot_quat[2], rot_quat[3]))
+                
+                    msg.pose.orientation.z = rot_quat[2]
+                    msg.pose.orientation.w = rot_quat[3]
+               
+#                rospy.loginfo(msg)                
+                                
                 self.uav_pub.publish(msg)
                 rospy.loginfo("----- !!(SIMULATION)!! Recieved ATAK Message from UID: %s, saying move to lat/long of %s, %s and map location %s, %s" %(this_uid, tgt_lat,tgt_long, tgt_utm_x,tgt_utm_y))
-                
+
+
     def robot_pose_to_tak(self):
         # Get current position in global frame        
         crnt_pose = self.tf1_listener.lookupTransform('utm', self.baselink_frame, rospy.Time(0))
-#        rospy.loginfo("+++++++++crnt_pose: %f, %f" %(crnt_pose[0][0], crnt_pose[0][1]))
         
-        
-        # ******
-#        (zone,start_utm_x,start_utm_y) = LLtoUTM(23, self.start_lat, self.start_lon)
-#        (zone,start_utm_arl_x,start_utm_arl_y) = LLtoUTM(23, self.start_arl_lat, self.start_arl_lon)       
         crnt_utm_x = crnt_pose[0][0]
         crnt_utm_y = crnt_pose[0][1]
         
         (crnt_lat,crnt_long) = UTMtoLL(23, crnt_utm_y, crnt_utm_x, self.zone) # 23 is WGS-84.
-#        rospy.loginfo("+++++crnt_lat/long: %f, %f" %(crnt_lat, crnt_long)) 
         
         # Send the current position to the TAK Server  
         #rospy.loginfo("latlong: %.7f,%.7f baselinkg is: %s"%(crnt_latitude,crnt_longitude, self.baselink_frame))    

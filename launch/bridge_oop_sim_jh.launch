@@ -1,6 +1,6 @@
 <launch>
 
-  <arg name="vehicle_namespace" default="uav1"/>
+  <arg name="vehicle_namespace" default="ranger1"/>
 
 
   <!-- Settings for ATAK communications -->
@@ -22,9 +22,9 @@ River Courts:  41.39058,  -73.953230, 18T,  0 degrees magnetic
 -->
   <!-- Default location is River Courts, WPNY -->
   <arg name="utm_zone" default="18S" />
-  <arg name="start_lat" default="41.389974" 
+  <arg name="start_lat" default="39.351285"
     doc="The initial latitude when the robot's odom is all zeros."/> 
-  <arg name="start_long" default="-73.955016"
+  <arg name="start_long" default="-76.344954"
     doc="The initial longitude when the robot's odom is all zeros."/> 
   <arg name="start_alt" default="1.5"
     doc="The initial altitude when the robot's odom is all zeros."/>
