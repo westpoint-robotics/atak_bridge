@@ -120,7 +120,10 @@ class AtakBridge:
                 #rospy.loginfo("COT XML:\n%s\n" %(cot_xml))
                 #self.takmsg_tree = ET.fromstring(cot_xml)
                 self.takmsg_tree = ET.ElementTree(ET.fromstring(cot_xml))
-                self.parse_takmsg_plugin()
+                msg_data = self.parse_takmsg_plugin()
+                if (len(msg_data) > 2):
+                    # send goto message to robot
+                    rospy.loginfo("\n============>  %s, %s, %s, %s\n" %(msg_data[0],msg_data[1],msg_data[2],msg_data[3])) 
         except:
             rospy.logdebug("Read Cot failed: %s" % (sys.exc_info()[0]))
 
@@ -132,14 +135,19 @@ class AtakBridge:
                 if ('husky_1_goto' == msg_uid):
                     lat = self.takmsg_tree.find("./point").attrib['lat']
                     lon = self.takmsg_tree.find("./point").attrib['lon']
+                    detail = self.takmsg_tree.find("./detail").find("./remarks").text.split(',')
+                    desired_orientation = detail[2]
+                    desired_altitude = detail[3]
                     (zone,crnt_utm_e,crnt_utm_n) = LLtoUTM(23, float(lat), float(lon))
-                    rospy.loginfo("\n\n----- Recieved ATAK Message from UID: %s, saying move to lat/lon of %s, %s\n\n" %(msg_uid,lat,lon)) 
+                    #rospy.loginfo("\n\n----- Recieved ATAK Message from UID: %s, saying move to lat/lon of %s, %s heading: %s altitude: %s\n\n" %(msg_uid,lat,lon,desired_orientation,desired_altitude)) 
+                    return (lat,lon,desired_orientation,desired_altitude)
+            return 'na' # Not a message for the robot
         except Exception, e:
             rospy.logwarn("\n\n----- Recieved ATAK Message and have an error of: "+ str(e) + '\n\n') 
+            return 'na' # Cant parse the ATAK message
 
     def robot_pose_to_tak(self):
-        # Get current position in global frame        
-
+        # Get current position in global frame
         (crnt_latitude,crnt_longitude) = (41.39081900138365, -73.9531831888787)
         my_cot = mkcot.mkcot(cot_identity="friend", 
             cot_stale = 0.1, 
