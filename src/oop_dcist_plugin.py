@@ -25,12 +25,9 @@ import rospy
 import rospkg
 import tf
 
-from visualization_msgs.msg import MarkerArray, Marker
+from visualization_msgs.msg import Marker
 from geometry_msgs.msg import PoseStamped, Pose
-from geometry_msgs.msg import Vector3Stamped
-from nav_msgs.msg import Odometry
-
-#from vision_msgs.msg import Detection2DArray #TODO this message is what is used in mavplatform, does not exist in phoenix
+from atak_bridge.msg import PoseDescriptionHeader, PoseDescriptionArray
 
 from takpak.mkcot import mkcot
 from takpak.takcot import takcot
@@ -57,14 +54,12 @@ class AtakBridge:
         self.takmsg_tree = ''
         self.target_list = ["people"]#["car", "Vehicle"]
         self.msg_id_num=0
-        self.marker_topic="/"+self.robot_name+"/atak/goal"
-        self.vis_pub = rospy.Publisher(self.marker_topic, Marker, queue_size=10)
-        #self.goal_topic="/"+self.robot_name+"/nav_goal/2d"        
-        #self.uav_pub = rospy.Publisher(self.goal_topic, PoseStamped, queue_size=10)
-        self.goal_topic="/"+self.robot_name+"/goto_region/goal"
         
-        # rospy.Subscriber("/husky/worldmodel_rviz/object_markers", MarkerArray, self.grnd_object_cb)
-        #rospy.Subscriber("/uav1/detection_localization/detections/out/local", Detection2DArray, self.object_location_cb)
+        self.vis_pub = rospy.Publisher("atak/goal_marker", Marker, queue_size=10) # TODO add this back in as a debug ability
+        self.goal_pub = rospy.Publisher("atak/goto_goal", PoseDescriptionHeader, queue_size=10)       
+        rospy.Subscriber("robot_location", PoseDescriptionHeader, self.robot_location_cb)       
+        rospy.Subscriber("object_location", PoseDescriptionArray, self.objects_location_cb)
+        
         rospy.loginfo("Started ATAK Bridge with the following:\n\t\tCallsign: %s\n\t\tUID: %s\n\t\tTeam name: %s\n\t\tGlobal Frame: %s"
                     %(self.my_callsign,self.my_uid,self.my_team_name,self.global_frame))
         self.takserver = takcot() #TODO add a timeout and exit condition                    
@@ -76,14 +71,6 @@ class AtakBridge:
         else:
             uid = "ugv_"+str(socket.getfqdn()) + "-" + str(uuid.uuid1())[-12:]  
         return uid  
-                    
-    def distancePoses(self, pose1, pose2):
-        """Determine the distance between two ROS pose data types"""                
-        p1 = np.array([pose1.position.x,pose1.position.y,pose1.position.z])
-        p2 = np.array([pose2.position.x,pose2.position.y,pose2.position.z])
-        squared_dist = np.sum((p1-p2)**2, axis=0)
-        dist = np.sqrt(squared_dist)
-        return dist
         
     def takserver_start(self):
         rospy.loginfo("============ Connecting to  TAK Server at %s:%s ===============" %(self.tak_ip,self.tak_port))

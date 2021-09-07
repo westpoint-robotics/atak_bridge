@@ -27,14 +27,17 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate messages in the 'msg' folder
  add_message_files(
    FILES
-   AtakContact.msg
-   AtakContactList.msg
+   PoseDescription.msg
+   PoseDescriptionArray.msg
+   PoseDescriptionHeader.msg
  )
 
 ## Generate added messages and services with any dependencies listed here
  generate_messages(
    DEPENDENCIES
-   sensor_msgs
+   geometry_msgs
+   std_msgs
+   atak_bridge
  )
 
 
@@ -76,17 +79,9 @@ catkin_package(
 #    xerces-c
 #)
 
-install(PROGRAMS
-    src/contact_pub.py
-    src/dcist_cots.py
-    src/fix_pub.py
-    src/global_cords_node.py
-    src/goto_target.py
-    src/utm_2_map.py
-    src/obj_2_atak_uav.py
-    src/LatLongUTMconversion.py
+install(DIRECTORY src
     DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-)
+    FILES_MATCHING PATTERN "*.py")
 
 install(PROGRAMS
     src/takpak/mkcot.py
