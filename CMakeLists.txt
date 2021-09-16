@@ -29,7 +29,7 @@ find_package(catkin REQUIRED COMPONENTS
    FILES
    PoseDescription.msg
    PoseDescriptionArray.msg
-   PoseDescriptionHeader.msg
+   PoseDescriptionStamped.msg
  )
 
 ## Generate added messages and services with any dependencies listed here

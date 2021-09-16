@@ -27,7 +27,7 @@ import tf
 
 from visualization_msgs.msg import Marker
 from geometry_msgs.msg import PoseStamped, Pose
-from atak_bridge.msg import PoseDescriptionHeader, PoseDescriptionArray
+from atak_bridge.msg import PoseDescriptionStamped, PoseDescriptionArray
 
 from takpak.mkcot import mkcot
 from takpak.takcot import takcot
@@ -55,7 +55,7 @@ class AtakBridge:
         self.target_list = ["people","car", "Vehicle"]
 
         self.vis_pub = rospy.Publisher("goal_marker", Marker, queue_size=10) # TODO add this back in as a debug ability
-        self.goal_pub = rospy.Publisher("goto_goal", PoseDescriptionHeader, queue_size=10)
+        self.goal_pub = rospy.Publisher("goto_goal", PoseDescriptionStamped, queue_size=10)
         rospy.Subscriber("object_location", PoseDescriptionArray, self.objects_location_cb)
 
         rospy.loginfo("===   Attempting to lookup a transform from %s to %s" %(self.global_frame, self.baselink_frame))
@@ -171,7 +171,7 @@ class AtakBridge:
                         msg_pose.orientation.y = orientation_quat[1]                        
                         msg_pose.orientation.z = orientation_quat[2]                        
                         msg_pose.orientation.w = orientation_quat[3]
-                    msg = PoseDescriptionHeader()
+                    msg = PoseDescriptionStamped()
                     msg.header.stamp = rospy.Time.now()
                     msg.header.frame_id = 'utm'
                     msg.pose.pose = msg_pose

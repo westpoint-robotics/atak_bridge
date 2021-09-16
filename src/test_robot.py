@@ -28,7 +28,7 @@ import tf
 
 from visualization_msgs.msg import Marker
 from geometry_msgs.msg import PoseStamped, Pose
-from atak_bridge.msg import PoseDescription, PoseDescriptionHeader, PoseDescriptionArray
+from atak_bridge.msg import PoseDescription, PoseDescriptionStamped, PoseDescriptionArray
 
 from LatLongUTMconversion import LLtoUTM, UTMtoLL
 
@@ -46,7 +46,7 @@ class TestRobot:
         self.targets = [("people",(10,25)),("car",(-10,25))]
         self.vis_pub = rospy.Publisher("goto_marker", Marker, queue_size=10)        
         self.obj_pub = rospy.Publisher("object_location", PoseDescriptionArray, queue_size=10)
-        rospy.Subscriber("goto_goal", PoseDescriptionHeader, self.goto_cb)
+        rospy.Subscriber("goto_goal", PoseDescriptionStamped, self.goto_cb)
                 
         rospy.loginfo("Started ATAK Bridge Test Robot:\n\t\Robot Name: %s"
                     %(self.robot_name))
@@ -100,6 +100,7 @@ if __name__ == '__main__':
                              "odom")
             if (abs(x) > 1000):
                 incr = incr * -1
+                
             sim_robot.publish_targets()
             rate.sleep()
         
