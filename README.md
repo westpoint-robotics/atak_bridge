@@ -4,9 +4,15 @@
     - The python code found in the takpak directory is modified versions of this code.
     - Some of the python code found outside the takpak directory is based on example code provided by takpak.  
 - ATAK Tutorials at: https://www.youtube.com/playlist?list=PLD4gdaBHX0b7GpPkuy0mbPaCw9kG3YgfB
+- This code expects the ATAK User to have the RRC AtAK Plugin installed on the ATAK device. This is required for the go to goal behavior to work. Th
 
 ## Requirement
-- These nodes require a transform from a global frame such as 'utm' to the robot's base_link frame.   
+- ROS TF has a transform from  base_link – odom – UTM. This is used to find the robot position in the global frame.
+- The objects found provide their location relative to the odom frame.
+- Each object found has a unique name, usually the category name and a number
+    - Examples: people01, people02, car01, car02, car03.
+    - atak_bridge creates a uid by concatenating the unique name and the robot name. Example: husky1_people02.
+    - If the name is not unique, ATAK treats this message as an update to location.
 
 ## WARNING:  
 The nodes that convert between UTM and LL are not tested for navigation across UTM zones. This code is intended for development and testing of robots in a single UTM zone. It is not tested in situations where the robot crosses UTM zones.   
