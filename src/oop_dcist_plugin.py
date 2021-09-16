@@ -80,11 +80,11 @@ class AtakBridge:
                 obj_pose = self.tf1_listener.transformPose("utm", obj_pose_stamped)        
                 (obj_latitude,obj_longitude) = UTMtoLL(23, obj_pose.pose.position.y, obj_pose.pose.position.x, self.zone) # 23 is WGS-84.
                 c_id =  self.robot_name + item.description.data
-                rospy.loginfo("Recieved a target of type: %s and sending with ID of: %s" % (item.description.data,c_id))
+                # rospy.loginfo("Recieved a target of type: %s and sending with ID of: %s" % (item.description.data,c_id))
                 try:
                     self.takserver.send(mkcot.mkcot(cot_identity="neutral", 
                         cot_stale = 1, 
-                        cot_type="a-f-G-M-F-Q", # TODO find a beter cot type and icon
+                        cot_type="a-n-G-M-F-Q", # TODO find a beter cot type and icon
                         cot_how="m-g", 
                         cot_callsign=item.description.data, 
                         cot_id= c_id, 
