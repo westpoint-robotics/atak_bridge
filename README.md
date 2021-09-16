@@ -20,10 +20,10 @@ The nodes that convert between UTM and LL are not tested for navigation across U
 #### Example usage
 There are launch files compatible with a UGS using ARL Phoenix stack and UAS Mav_Platform stack. If you are using this with other software stacks you may need to modify the messages pulbished. Each version uses a node with similiar code. They are not yet consolidated because the they each use custom messages that are propritery to their software stack.
 1. To run test code with a simulated robot:  
-- `roslaunch atak_bridge test_tak_bridge.launch`  
+    - `roslaunch atak_bridge test_tak_bridge.launch`  
 2. To run this with another robot:  
-- `roslaunch atak_bridge plugin_tak_bridge.launch`  
-- NOTE: atak_bridge requires a transform from utm to odom frame. To run this with your robot make sure this requirement is met. There is an example in the launch file on how to do this with a static transform publisher.  
+    - `roslaunch atak_bridge plugin_tak_bridge.launch`  
+    - NOTE: atak_bridge requires a transform from utm to odom frame. To run this with your robot make sure this requirement is met. There is an example in the launch file on how to do this with a static transform publisher.  
 
 #### Parameters
 - `name` (string, default: 'husky')  
