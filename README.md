@@ -62,6 +62,6 @@ The atak_bridge uses custom message types to send a position and description of 
         - `std_msgs/String` description
 - `atak_bridge/PoseDescriptionArray`
     - `std_msgs/Header` header
-    - `atak_bridge/PoseDescription` pose[]
+    - `atak_bridge/PoseDescription[]` pose_list
         - `geometry_msgs/Pose` pose
         - `std_msgs/String` description
