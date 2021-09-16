@@ -84,11 +84,12 @@ class AtakBridge:
                 try:
                     self.takserver.send(mkcot.mkcot(cot_identity="neutral", 
                         cot_stale = 1, 
-                        cot_type="a-n-G-M-F-Q", # TODO find a beter cot type and icon
+                        cot_type="a-n-G-I-c", # TODO find a beter cot type and icon
                         cot_how="m-g", 
                         cot_callsign=item.description.data, 
                         cot_id= c_id, 
-                        team_name=self.my_team_name, 
+                        # team_name=self.my_team_name, 
+                        team_name='yellow', 
                         team_role=self.my_team_role,
                         cot_lat=obj_latitude,
                         cot_lon=obj_longitude ))

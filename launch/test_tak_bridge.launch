@@ -2,7 +2,8 @@
   <arg name="name" default="husky"/>
   
 
-<node type="static_transform_publisher" pkg="tf2_ros" name="dummy2_utm_frame" args="587361.70 4582572.32 0 1.125737 0 0 utm map" />
+<!-- <node type="static_transform_publisher" pkg="tf2_ros" name="dummy2_utm_frame" args="587361.70 4582572.32 0 1.125737 0 0 utm map" /> -->
+<node type="static_transform_publisher" pkg="tf2_ros" name="dummy2_utm_frame" args="587532 4582703 0 1.125737 0 0 utm map" />
 <node type="static_transform_publisher" pkg="tf2_ros" name="dummy2_odom_frame" args="0 0 0 0 0 0 map odom" />
 
   <!-- Settings for ATAK communications -->
@@ -38,9 +39,6 @@
         <param name="global_frame" value="$(arg global_frame)" />
     </node>
   </group> 
-  
-  
-  
   
 
 </launch>
