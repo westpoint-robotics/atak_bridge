@@ -52,7 +52,7 @@ class AtakBridge:
         self.my_uid              = self.set_uid()
         self.zone='18T'
         self.takmsg_tree = ''
-        self.target_list = ["people"]#["car", "Vehicle"]
+        self.target_list = ["people","car", "Vehicle"]
 
         self.vis_pub = rospy.Publisher("goal_marker", Marker, queue_size=10) # TODO add this back in as a debug ability
         self.goal_pub = rospy.Publisher("goto_goal", PoseDescriptionHeader, queue_size=10)
@@ -70,24 +70,31 @@ class AtakBridge:
     def objects_location_cb(self, data):
         # rospy.loginfo(data)
         for item in data.pose_list:
-            if item.description in self.target_list:
+
+            if item.description.data in self.target_list:
                 # Build a PoseStamped as input to transformPose
                 obj_pose_stamped = PoseStamped()
                 obj_pose_stamped.header = data.header
                 obj_pose_stamped.header.stamp = data.header.stamp # Time stamp needed for the transforms                       
-                obj_pose_stamped.pose = item.pose.pose
+                obj_pose_stamped.pose = item.pose
                 obj_pose = self.tf1_listener.transformPose("utm", obj_pose_stamped)        
-                (obj_latitude,obj_longitude) = UTMtoLL(23, obj_pose.pose.position.y, obj_pose.pose.position.x, self.zone) # 23 is WGS-84.  
-                self.takserver.send(mkcot.mkcot(cot_identity="neutral", 
-                    cot_stale = 1, 
-                    cot_type="a-f-G-M-F-Q", # TODO find a beter cot type and icon
-                    cot_how="m-g", 
-                    cot_callsign=item.description, 
-                    cot_id= self.robot_name + "_object", 
-                    team_name=self.my_team_name, 
-                    team_role=self.my_team_role,
-                    cot_lat=obj_latitude,
-                    cot_lon=obj_longitude ))
+                (obj_latitude,obj_longitude) = UTMtoLL(23, obj_pose.pose.position.y, obj_pose.pose.position.x, self.zone) # 23 is WGS-84.
+                c_id =  self.robot_name + item.description.data
+                rospy.loginfo("Recieved a target of type: %s and sending with ID of: %s" % (item.description.data,c_id))
+                try:
+                    self.takserver.send(mkcot.mkcot(cot_identity="neutral", 
+                        cot_stale = 1, 
+                        cot_type="a-f-G-M-F-Q", # TODO find a beter cot type and icon
+                        cot_how="m-g", 
+                        cot_callsign=item.description.data, 
+                        cot_id= c_id, 
+                        team_name=self.my_team_name, 
+                        team_role=self.my_team_role,
+                        cot_lat=obj_latitude,
+                        cot_lon=obj_longitude ))
+                except:
+                    rospy.logdebug("Read Cot failed: %s" % (sys.exc_info()[0]))                    
+
         
     def set_uid(self):
         """Set the UID using either a rosparam or the system uuid"""
@@ -144,7 +151,7 @@ class AtakBridge:
                 msg_uid = msg_tree.attrib['uid']
                 robot_uid = self.robot_name + '_goto'
                 #if (robot_uid == msg_uid):
-                if ('husky_1_goto' == msg_uid):
+                if ('husky1_goto' == msg_uid):
                     lat = float(self.takmsg_tree.find("./point").attrib['lat'])
                     lon = float(self.takmsg_tree.find("./point").attrib['lon'])
                     detail = self.takmsg_tree.find("./detail").find("./remarks").text.split(',')
@@ -172,13 +179,15 @@ class AtakBridge:
                     # rospy.loginfo("\n\n----- Recieved ATAK Message from UID: %s, saying move to lat/lon of %s, %s heading: %s altitude: %s\n\n" %(msg_uid,lat,lon,desired_orientation,desired_altitude)) 
                     return (lat,lon,desired_orientation,desired_altitude)
             return 'na' # Not a message for the robot
-        except Exception, e:
+        except Exception as e:
             rospy.logwarn("\n\n----- Recieved ATAK Message and have an error of: "+ str(e) + '\n\n') 
             return 'na' # Cant parse the ATAK message
 
     def robot_pose_to_tak(self):
         # Get current position in global frame
-        (crnt_latitude,crnt_longitude) = (41.39081900138365, -73.9531831888787)
+        crnt_pose = self.tf1_listener.lookupTransform('utm', self.baselink_frame, rospy.Time(0))
+        (crnt_latitude,crnt_longitude) = UTMtoLL(23, crnt_pose[0][1], crnt_pose[0][0], self.zone) # 23 is WGS-84.
+        #(crnt_latitude,crnt_longitude) = (41.39081900138365, -73.9531831888787)
         my_cot = mkcot.mkcot(cot_identity="friend", 
             cot_stale = 0.1, 
             cot_type="a-f-G-M-F-Q",
@@ -201,8 +210,8 @@ if __name__ == '__main__':
         rate = rospy.Rate(loop_hz) # The rate of the loop is no faster than then the timeout.
         while not rospy.is_shutdown():
             bridge.takserver_read()
-            rate.sleep()
-        
+            bridge.robot_pose_to_tak()
+            rate.sleep()        
         bridge.takserver_shutdown()
     except rospy.ROSInterruptException:
         pass        

@@ -28,10 +28,7 @@ import tf
 
 from visualization_msgs.msg import Marker
 from geometry_msgs.msg import PoseStamped, Pose
-from atak_bridge.msg import PoseDescriptionHeader, PoseDescriptionArray
-
-from takpak.mkcot import mkcot
-from takpak.takcot import takcot
+from atak_bridge.msg import PoseDescription, PoseDescriptionHeader, PoseDescriptionArray
 
 from LatLongUTMconversion import LLtoUTM, UTMtoLL
 
@@ -43,24 +40,16 @@ class TestRobot:
 
     def __init__(self):
         self.robot_name          = rospy.get_param('~name', "husky")
-        self.my_team_name        = rospy.get_param('~team_name', 'Cyan') # Use one from ATAK which are colors
-        self.my_team_role        = rospy.get_param('~team_role', 'Team Member') # Use one from ATAK
-        self.tak_ip              = rospy.get_param('~tak_ip', '127.0.0.1') 
-        self.tak_port            = rospy.get_param('~tak_port', '8088') # Port for TCP un-encrypted connection
-        self.my_callsign         = rospy.get_param('~callsign', 'default_callsign')
         self.baselink_frame      = rospy.get_param('~baselink_frame', 'base_link')
         self.global_frame        = rospy.get_param('~global_frame', 'utm')
-        self.my_uid              = 'husky1'
         self.zone='18T'
-        self.takmsg_tree = ''
-        self.target_list = ["people"]#["car", "Vehicle"]
+        self.targets = [("people",(10,25)),("car",(-10,25))]
         self.vis_pub = rospy.Publisher("goto_marker", Marker, queue_size=10)        
         self.obj_pub = rospy.Publisher("object_location", PoseDescriptionArray, queue_size=10)
         rospy.Subscriber("goto_goal", PoseDescriptionHeader, self.goto_cb)
                 
-        rospy.loginfo("Started ATAK Bridge Test Robot:\n\t\tCallsign: %s\n\t\tUID: %s\n\t\tTeam name: %s"
-                    %(self.my_callsign,self.my_uid,self.my_team_name))
-        self.takserver = takcot() #TODO add a timeout and exit condition
+        rospy.loginfo("Started ATAK Bridge Test Robot:\n\t\Robot Name: %s"
+                    %(self.robot_name))
 
     def goto_cb(self, data):
         marker = Marker()
@@ -76,18 +65,32 @@ class TestRobot:
         marker.scale.z = 0.5
         marker.color.a = 1.0 
         marker.color.r = 1.0
-        self.vis_pub.publish( marker )
+        self.vis_pub.publish( marker )   
+
+    def publish_targets(self):
+        trgt_msg = PoseDescriptionArray()
+        for target in self.targets:
+            # rospy.loginfo("TARGET: %s" % target[0])
+            trgt_msg.header.stamp = rospy.Time.now()
+            trgt_msg.header.frame_id = 'odom'
+            pd = PoseDescription()
+            pd.description.data = target[0]
+            pd.pose.position.x = target[1][0]
+            pd.pose.position.y = target[1][1]
+            trgt_msg.pose_list.append(pd)
+        self.obj_pub.publish(trgt_msg)
  
 if __name__ == '__main__':
     try:
         rospy.init_node("test_robot")
-        bridge = TestRobot()
+        sim_robot = TestRobot()
         br = tf.TransformBroadcaster()
         loop_hz = 20
         rate = rospy.Rate(loop_hz) # The rate of the loop is no faster than then the timeout.
         x = 0
         incr = 1
         while not rospy.is_shutdown():
+            # Using sine wiave to simulate robot motion
             y = math.sin(x/100.0)
             x += incr
             br.sendTransform((x/100.0*5, y*8, 0),
@@ -97,7 +100,10 @@ if __name__ == '__main__':
                              "odom")
             if (abs(x) > 1000):
                 incr = incr * -1
+            sim_robot.publish_targets()
             rate.sleep()
         
     except rospy.ROSInterruptException:
+        rospy.loginfo("EXCEPTION THROWN")
+
         pass    

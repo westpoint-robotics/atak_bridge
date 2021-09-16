@@ -29,7 +29,7 @@ from geometry_msgs.msg import PoseStamped, Pose
 from geometry_msgs.msg import Vector3Stamped
 #from arl_nav_msgs.msg import GotoRegionActionGoal # Used to publish target location as a goto goal
 from nav_msgs.msg import Odometry
-from vision_msgs.msg import Detection2DArray #TODO this message is what is used in mavplatform, does not exist in phoenix
+#from vision_msgs.msg import Detection2DArray #TODO this message is what is used in mavplatform, does not exist in phoenix
 
 from takpak.mkcot import mkcot
 from takpak.takcot import takcot
@@ -153,8 +153,8 @@ class AtakBridge:
                     this_uid = self.takmsg_tree.get("uid")
                     lat = self.takmsg_tree.find("./point").attrib['lat']
                     lon = self.takmsg_tree.find("./point").attrib['lon']
-                except Exception, e:
-                    rospy.logwarn("----- Recieved ATAK Message and it is not a move to command -----"+ str(e))
+                except Exception:
+                    rospy.logwarn("----- Recieved ATAK Message and it is not a move to command -----")
                 (zone,crnt_utm_e,crnt_utm_n) = LLtoUTM(23, float(lat), float(lon))
                 goal_pose_stamped = PoseStamped()
                 goal_pose_stamped.header.stamp = rospy.Time.now()  
