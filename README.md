@@ -51,17 +51,17 @@ There are launch files compatible with a UGS using ARL Phoenix stack and UAS Mav
 - `~/object_locations` (atak_msgs/PoseDescriptionArray): This is a list of object locations and descriptions that should be displayed to ATAK users. This message uses a single header timestamp and frame_id for all objects. 
 
 #### Custom Messages
-[Communication Block Diagram](https://github.com/westpoint-robotics/atak_bridge/blob/master/docs/ATAK_Plugin.pdf)
-- PoseDescription pose
-    - geometry_msgs/Pose pose
-    - std_msgs/String description
-- PoseDescriptionStamped
-    - std_msgs/Header header
-    - PoseDescription pose
-        - geometry_msgs/Pose pose
-        - std_msgs/String description
-- PoseDescriptionArray
-    - std_msgs/Header header
-    - PoseDescription pose[]
-        - geometry_msgs/Pose pose
-        - std_msgs/String description
+The atak_bridge uses custom message types to send a position and description of that position in a single message. Below are the message definitions and block diagram can be found at: [Communication Block Diagram](https://github.com/westpoint-robotics/atak_bridge/blob/master/docs/ATAK_Plugin.pdf)
+- `atak_bridge/PoseDescription` 
+    - `geometry_msgs/Pose` pose
+    - `std_msgs/String` description
+- `atak_bridge/PoseDescriptionStamped` 
+    - `std_msgs/Header` header
+    - `atak_bridge/PoseDescription` pose
+        - `geometry_msgs/Pose` pose
+        - `std_msgs/String` description
+- `atak_bridge/PoseDescriptionArray`
+    - `std_msgs/Header` header
+    - `atak_bridge/PoseDescription` pose[]
+        - `geometry_msgs/Pose` pose
+        - `std_msgs/String` description
