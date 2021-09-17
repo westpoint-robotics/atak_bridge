@@ -3,8 +3,8 @@
 - The ATAK Client code is based on work found at: https://github.com/pinztrek/takpak.git.
     - The python code found in the takpak directory is modified versions of this code.
     - Some of the python code found outside the takpak directory is based on example code provided by takpak.  
-- ATAK Tutorials at: https://www.youtube.com/playlist?list=PLD4gdaBHX0b7GpPkuy0mbPaCw9kG3YgfB
-- This code expects the ATAK User to have the RRC AtAK Plugin installed on the ATAK device. This is required for the go to goal behavior to work. Th
+- This code expects the ATAK User to have the RRC AtAK Plugin installed on the ATAK device. This is required for the "go to goal" behavior to work.
+- Tutorials on generic ATAK usage can be found at: https://www.youtube.com/playlist?list=PLD4gdaBHX0b7GpPkuy0mbPaCw9kG3YgfB
 
 ## Requirement
 - ROS TF has a transform from  base_link – odom – UTM. This is used to find the robot position in the global frame.
@@ -56,6 +56,7 @@ The atak_bridge uses custom message types to send a position and description of 
     - `geometry_msgs/Pose` pose
     - `std_msgs/String` description
 - `atak_bridge/PoseDescriptionStamped` 
+- This code expects the ATAK User to have the RRC AtAK Plugin installed on the ATAK device. This is required for the "go to goal" behavior to work.
     - `std_msgs/Header` header
     - `atak_bridge/PoseDescription` pose
         - `geometry_msgs/Pose` pose
