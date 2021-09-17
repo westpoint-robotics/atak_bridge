@@ -56,9 +56,8 @@ The atak_bridge uses custom message types to send a position and description of 
     - `geometry_msgs/Pose` pose
     - `std_msgs/String` description
 - `atak_bridge/PoseDescriptionStamped` 
-- This code expects the ATAK User to have the RRC AtAK Plugin installed on the ATAK device. This is required for the "go to goal" behavior to work.
     - `std_msgs/Header` header
-    - `atak_bridge/PoseDescription` pose
+    - `atak_bridge/PoseDescription` pose  
         - `geometry_msgs/Pose` pose
         - `std_msgs/String` description
 - `atak_bridge/PoseDescriptionArray`
