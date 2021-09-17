@@ -52,15 +52,15 @@ There are launch files compatible with a UGS using ARL Phoenix stack and UAS Mav
 
 #### Custom Messages
 The atak_bridge uses custom message types to send a position and description of that position in a single message. Below are the message definitions and block diagram can be found at: [Communication Block Diagram](https://github.com/westpoint-robotics/atak_bridge/blob/master/docs/ATAK_Plugin.pdf)
-- `atak_bridge/PoseDescription` 
+##### `atak_bridge/PoseDescription` 
     - `geometry_msgs/Pose` pose
     - `std_msgs/String` description
-- `atak_bridge/PoseDescriptionStamped` 
+##### `atak_bridge/PoseDescriptionStamped` 
     - `std_msgs/Header` header
     - `atak_bridge/PoseDescription` pose  
         - `geometry_msgs/Pose` pose
         - `std_msgs/String` description
-- `atak_bridge/PoseDescriptionArray`
+##### `atak_bridge/PoseDescriptionArray`
     - `std_msgs/Header` header
     - `atak_bridge/PoseDescription[]` pose_list
         - `geometry_msgs/Pose` pose
