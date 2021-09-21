@@ -40,7 +40,7 @@ class AtakBridge:
     """A class used to communication between an ATAK and robots"""
 
     def __init__(self):
-        self.robot_name          = rospy.get_param('~name', "husky")
+        self.robot_name          = rospy.get_param('~name', "warty")
         self.my_team_name        = rospy.get_param('~team_name', 'Cyan') # Use one from ATAK which are colors
         self.my_team_role        = rospy.get_param('~team_role', 'Team Member') # Use one from ATAK
         self.tak_ip              = rospy.get_param('~tak_ip', '127.0.0.1') 
@@ -49,13 +49,13 @@ class AtakBridge:
         self.baselink_frame      = rospy.get_param('~baselink_frame', 'base_link') # Base frame for the robot
         self.map_frame           = rospy.get_param('~map_frame', 'map') # The frame that the objects are located in
         self.my_uid              = self.set_uid() # Unique ID for robot on TAK system
-        self.robot_msg_uid        = rospy.get_param('~robot_msg_uid', 'husky1_goto') # ID used to figure out if this message belongs to this robot
+        self.robot_msg_uid        = rospy.get_param('~robot_msg_uid', 'warty1_goto') # ID used to figure out if this message belongs to this robot
         self.zone='18T'
         self.takmsg_tree = ''
 
         self.vis_pub = rospy.Publisher("goal_marker", Marker, queue_size=10) # TODO add this back in as a debug ability
         self.goal_pub = rospy.Publisher("goto_goal", PoseDescriptionStamped, queue_size=10)
-        rospy.Subscriber("atak/object_location", PoseDescriptionArray, self.objects_location_cb)
+        rospy.Subscriber("object_location", PoseDescriptionArray, self.objects_location_cb)
 
         rospy.loginfo("===   Attempting to lookup a transform from %s to %s" %('utm', self.baselink_frame))
         self.tf1_listener = tf.TransformListener()

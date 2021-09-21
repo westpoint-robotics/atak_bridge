@@ -1,10 +1,7 @@
 <launch>
   <arg name="name" default="husky"/>
   
-
-<!-- <node type="static_transform_publisher" pkg="tf2_ros" name="dummy2_utm_frame" args="587361.70 4582572.32 0 1.125737 0 0 utm map" /> -->
-<node type="static_transform_publisher" pkg="tf2_ros" name="dummy2_utm_frame" args="587532 4582703 0 1.125737 0 0 utm map" />
-<node type="static_transform_publisher" pkg="tf2_ros" name="dummy2_odom_frame" args="0 0 0 0 0 0 map odom" />
+  <node type="static_transform_publisher" pkg="tf2_ros" name="dummy2_utm_frame" args="587532 4582703 0 1.125737 0 0 utm map" />
 
   <!-- Settings for ATAK communications -->
   <arg name="callsign" default="$(arg name)" doc="The callsign used by the robot on the ATAK system"/>
@@ -14,14 +11,10 @@
   <arg name="tak_ip" default="10.13.0.10" doc="The IP address of the ATAK server"/>
   <arg name="tak_port" default="8088" doc="The Port number on the ATAK server to connect to"/>
   <arg name="baselink_frame" default="base_link" doc="The base link frame of the robot"/>
-  <arg name="global_frame" default="odom" doc="The global coordinate frame used to send global locations to ATAK"/>
+  <arg name="map_frame" default="map" doc="The global coordinate frame used to send global locations to ATAK"/>
+  <arg name="robot_msg_uid" default="husky1_goto" doc="Used to identify ATAK Messages that are meant for this robot"/>
 
-<!-- 
-41.389974, -73.955016 37 degrees magnetic TH1136 
-41.39058,  -73.95323  0  degrees magnetic River Courts
--->
-
-  <group ns="$(arg name)/atak">  
+  <group ns="$(arg name)/atak">
     <node name="atak_bridge" pkg="atak_bridge" type="atak_bridge_node.py" output="screen">
         <param name="name" value="$(arg name)" />
         <param name="callsign" value="$(arg callsign)" />
@@ -30,15 +23,15 @@
         <param name="tak_ip" value="$(arg tak_ip)" />
         <param name="tak_port" value="$(arg tak_port)" />
         <param name="baselink_frame" value="$(arg baselink_frame)" />
-        <param name="global_frame" value="$(arg global_frame)" />
+        <param name="map_frame" value="$(arg map_frame)" />
     </node>
  
     <node name="test_robot" pkg="atak_bridge" type="test_robot.py" output="screen">
         <param name="name" value="$(arg name)" />
         <param name="baselink_frame" value="$(arg baselink_frame)" />
-        <param name="global_frame" value="$(arg global_frame)" />
+        <param name="map_frame" value="$(arg map_frame)" />
     </node>
-  </group> 
+  </group>
   
 
 </launch>
