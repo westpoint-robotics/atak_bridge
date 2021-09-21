@@ -22,7 +22,6 @@ from  xml.dom.minidom import parseString
 import logging
 
 import rospy
-import rospkg
 import tf
 
 from visualization_msgs.msg import Marker
@@ -47,20 +46,20 @@ class AtakBridge:
         self.tak_ip              = rospy.get_param('~tak_ip', '127.0.0.1') 
         self.tak_port            = rospy.get_param('~tak_port', '8088') # Port for TCP un-encrypted connection
         self.my_callsign         = rospy.get_param('~callsign', 'default_callsign')
-        self.baselink_frame      = rospy.get_param('~baselink_frame', 'base_link')
-        self.global_frame        = rospy.get_param('~global_frame', 'utm')
-        self.my_uid              = self.set_uid()
+        self.baselink_frame      = rospy.get_param('~baselink_frame', 'base_link') # Base frame for the robot
+        self.map_frame           = rospy.get_param('~map_frame', 'map') # The frame that the objects are located in
+        self.my_uid              = self.set_uid() # Unique ID for robot on TAK system
+        self.robot_msg_uid        = rospy.get_param('~robot_msg_uid', 'husky1_goto') # ID used to figure out if this message belongs to this robot
         self.zone='18T'
         self.takmsg_tree = ''
-        self.target_list = ["people","car", "Vehicle"]
 
         self.vis_pub = rospy.Publisher("goal_marker", Marker, queue_size=10) # TODO add this back in as a debug ability
         self.goal_pub = rospy.Publisher("goto_goal", PoseDescriptionStamped, queue_size=10)
-        rospy.Subscriber("object_location", PoseDescriptionArray, self.objects_location_cb)
+        rospy.Subscriber("atak/object_location", PoseDescriptionArray, self.objects_location_cb)
 
-        rospy.loginfo("===   Attempting to lookup a transform from %s to %s" %(self.global_frame, self.baselink_frame))
+        rospy.loginfo("===   Attempting to lookup a transform from %s to %s" %('utm', self.baselink_frame))
         self.tf1_listener = tf.TransformListener()
-        self.tf1_listener.waitForTransform(self.global_frame, self.baselink_frame, rospy.Time(0), rospy.Duration(35.0))
+        self.tf1_listener.waitForTransform('utm', self.baselink_frame, rospy.Time(0), rospy.Duration(35.0))
         rospy.loginfo("===   Transform lookup succeeded")
 
         rospy.loginfo("Started ATAK Bridge with the following:\n\t\tCallsign: %s\n\t\tUID: %s\n\t\tTeam name: %s"
@@ -71,30 +70,29 @@ class AtakBridge:
         # rospy.loginfo(data)
         for item in data.pose_list:
 
-            if item.description.data in self.target_list:
-                # Build a PoseStamped as input to transformPose
-                obj_pose_stamped = PoseStamped()
-                obj_pose_stamped.header = data.header
-                obj_pose_stamped.header.stamp = data.header.stamp # Time stamp needed for the transforms                       
-                obj_pose_stamped.pose = item.pose
-                obj_pose = self.tf1_listener.transformPose("utm", obj_pose_stamped)        
-                (obj_latitude,obj_longitude) = UTMtoLL(23, obj_pose.pose.position.y, obj_pose.pose.position.x, self.zone) # 23 is WGS-84.
-                c_id =  self.robot_name + item.description.data
-                # rospy.loginfo("Recieved a target of type: %s and sending with ID of: %s" % (item.description.data,c_id))
-                try:
-                    self.takserver.send(mkcot.mkcot(cot_identity="neutral", 
-                        cot_stale = 1, 
-                        cot_type="a-n-G-I-c", # TODO find a beter cot type and icon
-                        cot_how="m-g", 
-                        cot_callsign=item.description.data, 
-                        cot_id= c_id, 
-                        # team_name=self.my_team_name, 
-                        team_name='yellow', 
-                        team_role=self.my_team_role,
-                        cot_lat=obj_latitude,
-                        cot_lon=obj_longitude ))
-                except:
-                    rospy.logdebug("Read Cot failed: %s" % (sys.exc_info()[0]))                    
+            # Build a PoseStamped as input to transformPose
+            obj_pose_stamped = PoseStamped()
+            obj_pose_stamped.header = data.header
+            obj_pose_stamped.header.stamp = data.header.stamp # Time stamp needed for the transforms                       
+            obj_pose_stamped.pose = item.pose
+            obj_pose = self.tf1_listener.transformPose("utm", obj_pose_stamped)        
+            (obj_latitude,obj_longitude) = UTMtoLL(23, obj_pose.pose.position.y, obj_pose.pose.position.x, self.zone) # 23 is WGS-84.
+            c_id =  self.robot_name + item.description.data
+            # rospy.loginfo("Recieved a target of type: %s and sending with ID of: %s" % (item.description.data,c_id))
+            try:
+                self.takserver.send(mkcot.mkcot(cot_identity="neutral", 
+                    cot_stale = 1, 
+                    cot_type="a-n-G-I-c", # TODO find a beter cot type and icon
+                    cot_how="m-g", 
+                    cot_callsign=item.description.data, 
+                    cot_id= c_id, 
+                    # team_name=self.my_team_name, 
+                    team_name='yellow', 
+                    team_role=self.my_team_role,
+                    cot_lat=obj_latitude,
+                    cot_lon=obj_longitude ))
+            except:
+                rospy.logdebug("Read Cot failed: %s" % (sys.exc_info()[0]))                    
 
         
     def set_uid(self):
@@ -152,32 +150,42 @@ class AtakBridge:
                 msg_uid = msg_tree.attrib['uid']
                 robot_uid = self.robot_name + '_goto'
                 #if (robot_uid == msg_uid):
-                if ('husky1_goto' == msg_uid):
+                rospy.loginfo("Mesage UID: %s",msg_uid)
+                if (self.robot_msg_uid == msg_uid):
                     lat = float(self.takmsg_tree.find("./point").attrib['lat'])
                     lon = float(self.takmsg_tree.find("./point").attrib['lon'])
                     detail = self.takmsg_tree.find("./detail").find("./remarks").text.split(',')
                     desired_orientation = detail[2]
                     desired_altitude = detail[3]                
                     (zone,crnt_utm_e,crnt_utm_n) = LLtoUTM(23, lat, lon)
-                    msg_pose = Pose()
-                    msg_pose.position.x = crnt_utm_e
-                    msg_pose.position.y = crnt_utm_n
+
+                    msg_pose = PoseStamped()
+                    msg_pose.header.stamp = rospy.Time.now()
+                    msg_pose.header.frame_id = 'utm'
+                    msg_pose.pose.position.x = crnt_utm_e
+                    msg_pose.pose.position.y = crnt_utm_n
                     if (desired_altitude != 'NA'):    
                         print(type(desired_orientation),desired_orientation)                        
-                        msg_pose.position.z = float(desired_altitude)
+                        msg_pose.pose.position.z = float(desired_altitude)
                     if (desired_orientation != 'NA'):
                         orientation_quat = tf.transformations.quaternion_from_euler(0,0,float(desired_orientation)/180*3.14)                        
-                        msg_pose.orientation.x = orientation_quat[0]                        
-                        msg_pose.orientation.y = orientation_quat[1]                        
-                        msg_pose.orientation.z = orientation_quat[2]                        
-                        msg_pose.orientation.w = orientation_quat[3]
+                        msg_pose.pose.orientation.x = orientation_quat[0]                        
+                        msg_pose.pose.orientation.y = orientation_quat[1]                        
+                        msg_pose.pose.orientation.z = orientation_quat[2]                        
+                        msg_pose.pose.orientation.w = orientation_quat[3]
+                    else:                      
+                        msg_pose.pose.orientation.z = 0.0516597603525                        
+                        msg_pose.pose.orientation.w = 0.998664743125
+
+                    msg_pose2 = self.tf1_listener.transformPose(self.map_frame, msg_pose)        
+
                     msg = PoseDescriptionStamped()
-                    msg.header.stamp = rospy.Time.now()
-                    msg.header.frame_id = 'utm'
-                    msg.pose.pose = msg_pose
+                    msg.header.stamp = msg_pose.header.stamp
+                    msg.header.frame_id = self.map_frame
+                    msg.pose.pose = msg_pose2.pose
                     msg.pose.description.data = robot_uid
                     self.goal_pub.publish(msg)
-                    # rospy.loginfo("\n\n----- Recieved ATAK Message from UID: %s, saying move to lat/lon of %s, %s heading: %s altitude: %s\n\n" %(msg_uid,lat,lon,desired_orientation,desired_altitude)) 
+                    rospy.loginfo("\n\n----- Recieved ATAK Message from UID: %s, saying move to lat/lon of %s, %s heading: %s altitude: %s\n\n" %(msg_uid,lat,lon,desired_orientation,desired_altitude)) 
                     return (lat,lon,desired_orientation,desired_altitude)
             return 'na' # Not a message for the robot
         except Exception as e:
