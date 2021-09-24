@@ -133,8 +133,10 @@ class AtakBridge:
         try: # TODO Use a non-blocking read of the socket
             cotresponse = self.takserver.readcot(readtimeout=1) # This is a blocking read for 1 second.
             cot_xml = cotresponse[0]
+            #rospy.loginfo("COT XML:\n%s\n" %(cot_xml))
+
             if (len(cot_xml)>1):
-                #rospy.loginfo("COT XML:\n%s\n" %(cot_xml))
+                rospy.loginfo("COT XML:\n%s\n" %(cot_xml))
                 self.takmsg_tree = ET.ElementTree(ET.fromstring(cot_xml))
                 msg_data = self.parse_takmsg_plugin()
                 if (len(msg_data) > 2):

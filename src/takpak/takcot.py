@@ -3,6 +3,7 @@ __author__ = 'Alan Barrow <traveler@pinztrek.com>'
 __copyright__ = 'Copyright 2020 Alan Barrow'
 __license__ = 'GPL, Version 3+'
 import os
+import sys
 #from time import sleep,gmtime,strftime
 import time
 
@@ -135,38 +136,41 @@ class takcot():
 
         response = ''
         for i in range(readattempts):
-            #print("Read attempt: " + str(i))
+            # print("Read attempt: " + str(i))
+            response = ''
             try:
-                response = self.sock.recv(2048)
-                #print("readit response is:")
-                #print(response)
+                while True:
+                    response += self.sock.recv(2049)
+
+            except socket.timeout:
+                # print("readit response is: ====================",len(response))
+                # print(response)
                 return response
 
             except KeyboardInterrupt:
                 self.logger.debug("Kbd Interrupt during read")
                 raise
-
             except:
-                #print("readit read empty")
-                pass
-
-        return response
+                print("Takcot socket read failed: %s" % (sys.exc_info()[0]))
+                raise
 
     def readcot(self, readtimeout=10, frag=""):
         # Read a buff
         #print("readcot passed frag= " + frag)
         #print("readtimeout= " + str(readtimeout))
         try:
+             
             cotbuff = self.read(readtimeout=readtimeout,readattempts=1)
             #print("readcot successful read")
         except:
             # Nothing read in timeout
-            print("Nothing read in timeout, but now process any frag")
+            #print("Nothing read in timeout2, but now process any frag")
+            print("readcot failed: %s" % (sys.exc_info()[0]))
             #return "",frag
 
-        #print("cotbuff length is: " + str(len(cotbuff)))
-        #print("raw cotbuff:")
-        #print(cotbuff)
+        # print("cotbuff length is: " + str(len(cotbuff)))
+        # print("raw cotbuff:")
+        # print(cotbuff)
 
         # OK, we read something, now prepend the frag and clean it up
         if cotbuff:
