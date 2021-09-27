@@ -143,8 +143,8 @@ class takcot():
                     response += self.sock.recv(2049)
 
             except socket.timeout:
-                # print("readit response is: ====================",len(response))
-                # print(response)
+                print("readit response is: ====================",len(response))
+                print(response)
                 return response
 
             except KeyboardInterrupt:

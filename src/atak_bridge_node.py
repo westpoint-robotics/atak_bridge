@@ -135,7 +135,7 @@ class AtakBridge:
         try: # TODO Use a non-blocking read of the socket
             cotresponse = self.takserver.readcot(readtimeout=1) # This is a blocking read for 1 second.
             cot_xml = cotresponse[0]
-            #rospy.loginfo("COT XML:\n%s\n" %(cot_xml))
+            # rospy.loginfo("COT XML:\n%s\n" %(cot_xml))
 
             if (len(cot_xml)>1):
                 rospy.loginfo("COT XML2:\n%s\n" %(cot_xml))
@@ -166,7 +166,7 @@ class AtakBridge:
                     wp_pose.header = robot_path.header
                     wp_pose.pose.position.x = float(crnt_utm_e)
                     wp_pose.pose.position.y = float(crnt_utm_n)
-                    wp_pose.pose.orientation.z = 1
+                    wp_pose.pose.orientation.w = 1
                     robot_path.poses.append(wp_pose)
                 self.path_pub.publish(robot_path)
                     
