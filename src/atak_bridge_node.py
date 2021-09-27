@@ -61,12 +61,24 @@ class AtakBridge:
 
         rospy.loginfo("===   Attempting to lookup a transform from %s to %s" %('utm', self.baselink_frame))
         self.tf1_listener = tf.TransformListener()
-        self.tf1_listener.waitForTransform('utm', self.baselink_frame, rospy.Time(0), rospy.Duration(35.0))
+        self.wait_for_transform()
+#        self.tf1_listener.waitForTransform('utm', self.baselink_frame, rospy.Time(0), rospy.Duration(35.0))
         rospy.loginfo("===   Transform lookup succeeded")
 
         rospy.loginfo("Started ATAK Bridge with the following:\n\t\tCallsign: %s\n\t\tUID: %s\n\t\tTeam name: %s"
                     %(self.my_callsign,self.my_uid,self.my_team_name))
         self.takserver = takcot() #TODO add a timeout and exit condition
+        
+    def wait_for_transform(self):
+        while not rospy.is_shutdown():
+            try:
+                trans = self.tf1_listener.lookupTransform('utm', self.baselink_frame, rospy.Time(0))
+                rospy.loginfo("===   The atak_bridge FOUND ros transform utm -> %s" %(self.baselink_frame)) 
+                break               
+            except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+                rospy.loginfo("===   The atak_bridge is waiting for ros transform utm -> %s" %(self.baselink_frame))
+                rospy.sleep(1)
+                continue
 
     def objects_location_cb(self, data):
         # rospy.loginfo(data)
