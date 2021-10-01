@@ -7,8 +7,9 @@
   <arg name="callsign" default="$(arg name)" doc="The callsign used by the robot on the ATAK system"/>
   <arg name="team_name" default="Cyan" doc="The Team Name used by the robot on the ATAK system"/>
   <arg name="team_role" default="Team Member" doc="The Team Role used by the robot on the ATAK system"/>
-  <arg name="tak_ip" default="192.168.17.121" doc="The IP address of the ATAK server"/>
+  <!-- <arg name="tak_ip" default="192.168.17.121" doc="The IP address of the ATAK server"/> -->
   <!-- <arg name="tak_ip" default="10.13.0.10" doc="The IP address of the ATAK server"/> -->
+  <arg name="tak_ip" default="10.42.0.216" doc="The IP address of the ATAK server"/>
   <arg name="tak_port" default="8088" doc="The Port number on the ATAK server to connect to"/>
   <arg name="baselink_frame" default="base_link" doc="The base link frame of the robot"/>
   <arg name="map_frame" default="map" doc="The global coordinate frame used to send global locations to ATAK"/>
