@@ -1,0 +1,37 @@
+<launch>
+  <arg name="name" default="callisto"/>
+  
+
+<!-- Examples of static transforms from UTM to map -->
+<node type="static_transform_publisher" pkg="tf2_ros" name="dummy2_utm_frame" args="587532 4582703 0 1.125737 0 0 utm map" /> -->
+<!-- <node type="static_transform_publisher" pkg="tf2_ros" name="dummy2_odom_frame" args="0 0 0 0 0 0 warty/base_link base_link" /> -->
+
+  <!-- Settings for ATAK communications -->
+  <arg name="callsign" default="$(arg name)" doc="The callsign used by the robot on the ATAK system"/>
+  <arg name="team_name" default="Cyan" doc="The Team Name used by the robot on the ATAK system"/>
+  <arg name="team_role" default="Team Member" doc="The Team Role used by the robot on the ATAK system"/>
+  <!-- <arg name="tak_ip" default="192.168.17.121" doc="The IP address of the ATAK server"/> -->
+<!--  <arg name="tak_ip" default="10.13.0.10" doc="The IP address of the ATAK server"/>-->
+  <arg name="tak_ip" default="10.42.0.187" doc="The IP address of the ATAK server"/>
+  <arg name="tak_port" default="8088" doc="The Port number on the ATAK server to connect to"/>
+  <arg name="baselink_frame" default="map" doc="The base link frame of the robot"/>
+  <arg name="map_frame" default="$(arg name)/map" doc="The global coordinate frame used to send global locations to ATAK"/>
+  <arg name="odom_topic" default="/$(arg name)/odom" doc="The topic that provides the robot location to ATAK"/>
+  <arg name="robot_msg_uid" default="$(arg name)1_goto" doc="Used to identify ATAK Messages that are meant for this robot"/>
+  
+  <group ns="$(arg name)/atak">  
+    <node name="atak_bridge" pkg="atak_bridge" type="atak_bridge_basestation.py" output="screen">
+        <param name="name" value="$(arg name)" />
+        <param name="callsign" value="$(arg callsign)" />
+        <param name="team_name" value="$(arg team_name)" />
+        <param name="team_role" value="$(arg team_role)" />
+        <param name="tak_ip" value="$(arg tak_ip)" />
+        <param name="tak_port" value="$(arg tak_port)" />
+        <param name="baselink_frame" value="$(arg baselink_frame)" />
+        <param name="odom_topic" value="$(arg odom_topic)" />
+        <param name="map_frame" value="$(arg map_frame)" />
+    </node>
+
+  </group> 
+  
+</launch>
