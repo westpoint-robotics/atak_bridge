@@ -103,11 +103,11 @@ if __name__ == '__main__':
         rospy.init_node("test_robot")
         sim_robot = TestRobot()
         br = tf.TransformBroadcaster()
-        loop_hz = 20
+        loop_hz = 1
         rate = rospy.Rate(loop_hz) 
         while not rospy.is_shutdown():
             sim_robot.sim_robot_move()
-            sim_robot.publish_targets()
+            #sim_robot.publish_targets()
             rate.sleep()
         
     except rospy.ROSInterruptException:
