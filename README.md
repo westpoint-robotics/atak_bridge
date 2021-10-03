@@ -72,3 +72,22 @@ The atak_bridge uses custom message types to send a position and description of 
 &emsp;`atak_bridge/PoseDescription[]` pose_list  
 &emsp;&emsp;`geometry_msgs/Pose` pose  
 &emsp;&emsp;`std_msgs/String` description  
+
+# DEV Notes
+
+## Identification Clarification Needed. It is not allways clear what "uid" is.
+
+### ATAK 
+- Every event in ATAK has an **uid** (unique identifier). ATAK events require an **uid** that is a "globally unique name for this information on this event" 
+- In a CoT message a sub-schema may appear in the 'detail' element. In the 'detail' element a **uid** sub element exists that "provides a place to annotate a CoT message with the unique identifier used by a particular system". 
+- In CoT documentation the acronym **uid** seems to mean one of two things either **unique identifier** or **user identifier**.
+
+### Use cases
+1. An ATAK user wishes a robot to follow a route. 
+    - The user draws a route on his ATAK interface using the ATAK Route Tool.
+    - The user adds the robot's callsign to the Route Name field by selecting the route name and typing the robot name into the end of the existing route name.
+    - The user then use the send button to send it to the atak_bridge.
+    - The atak_bridge code converts it to a ROS nav_msg/Path and publishes it.
+    - Questions:
+        1. How to handle orientation at waypoints and end point? ATAK routes does not do orientation.
+        2. How to handle altitude at waypoints and end point? ATAK routes does not do altitude.
