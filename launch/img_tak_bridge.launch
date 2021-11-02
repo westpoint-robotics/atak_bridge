@@ -1,0 +1,62 @@
+<launch>
+  <arg name='group_name' default='arl_DCIST'/>
+  <arg name="vehicle_ns" default="ranger11"/>
+
+<!--
+public atak: 23.97.11.65 / 8088
+wp eecsnet : 10.13.0.10 / 8088
+-->
+  <!-- Settings for ATAK communications -->
+  <arg name="callsign" default="$(arg vehicle_ns)" doc="The callsign used by the robot on the ATAK system"/>
+  <arg name="team_name" default="Blue" doc="The Team Name used by the robot on the ATAK system"/>
+  <arg name="team_role" default="Autonomous Agent" doc="The Team Role used by the robot on the ATAK system"/>
+  <arg name="tak_ip" default="23.97.11.65" doc="The IP address of the ATAK server"/>
+  <arg name="tak_port" default="8088" doc="The Port number on the ATAK server to connect to"/>
+<!--  <arg name="odom_topic" default="/$(arg vehicle_ns)/mavros/global_position/local" doc="The odometry topic that declares the robot location"/> -->
+  <arg name="odom_topic" default="/$(arg vehicle_ns)/mavros/local_position/odom" doc="The odometry topic that declares the robot location"/>
+  
+  <arg name="baselink_frame" default="$(arg vehicle_ns)/base_link" doc="The base link frame of the robot"/>
+  <arg name="map_frame" default="$(arg vehicle_ns)/odom" doc="The global coordinate frame used to send global locations to ATAK"/>
+
+<!-- odom to utm -->
+  <node name='utm_frame' pkg='tf2_ros' type='static_transform_publisher' args='384114.03 4356622.76 -2.417 0 0 0 utm $(arg map_frame)' /> 
+<!--
+         APG:  39.476561, -76.083870  18S,  406777.56, 4370223.86
+          GQ:  39.351285, -76.344954  18S,  384114.03, 4356622.76
+      TH1136:  41.389974, -73.955016, 18T,  587365.34, 4582576.14, 37 deg. magnetic
+River Courts:  41.39058,  -73.953230, 18T,  587513.84, 4582645.22,  0 deg. magnetic
+-->
+
+  <!-- Default location is River Courts, WPNY -->
+  <arg name="utm_zone" default="18S" />
+  <arg name="start_lat" default="39.351285" doc="The initial latitude when the robot's odom is all zeros."/> 
+  <arg name="start_lon" default="-76.344954" doc="The initial longitude when the robot's odom is all zeros."/> 
+  <arg name="start_heading" default="0.0"/> <!-- A heading of 0 indicates due west -->
+
+  <!-- Setting target alt. -->
+  <arg name="tgt_alt" default="3.0" doc="Target altitude."/>
+
+
+  <group ns="$(arg vehicle_ns)/atak">
+    <node name="dcist_cots" pkg="atak_bridge" type="oop_img_node.py" output="screen">
+        <param name="name" value="$(arg vehicle_ns)" />
+        <param name="callsign" value="$(arg callsign)" />
+        <param name="team_name" value="$(arg team_name)" />
+        <param name="team_role" value="$(arg team_role)" />
+        
+        <param name="tak_ip" value="$(arg tak_ip)" />
+        <param name="tak_port" value="$(arg tak_port)" />
+
+<!--        <param name="odom_topic" value="$(arg odom_topic)" />-->
+        <param name="baselink_frame" value="$(arg baselink_frame)" />
+        <param name="map_frame" value="$(arg map_frame)" />
+        
+        <param name="utm_zone" value="$(arg utm_zone)" />
+        <param name="start_lat" value="$(arg start_lat)" />
+        <param name="start_lon" value="$(arg start_lon)" />
+        <param name="tgt_alt" value="$(arg tgt_alt)" />
+    </node>
+  </group>
+
+
+</launch>
