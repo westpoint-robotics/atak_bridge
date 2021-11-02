@@ -1,4 +1,11 @@
 #!/usr/bin/env python
+
+# oop_img_test.py
+# Jinho Kim (jinho.kim@westpoint.edu)
+# Nov. 2021
+
+# Image display function added
+
 from __future__ import (absolute_import, division,
                         print_function, unicode_literals)
 
