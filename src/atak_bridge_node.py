@@ -98,10 +98,11 @@ class AtakBridge:
                 self.takserver.send(mkcot.mkcot(
                     cot_identity="neutral", 
                     cot_stale = 1, 
-                    cot_type="a-h-G", # TODO find a beter cot type and icon
-                    cot_how="m-g", 
+                    cot_type="a-h-G", # Change to f for friendly and h for hostile icon
+                    cot_how="h-g-i-g-o", 
                     cot_callsign=item.description.data, 
-                    cot_id= c_id, 
+                    cot_id= c_id,
+                    archive_attr="ll", 
                     # team_name=self.my_team_name, 
                     team_name='yellow', 
                     team_role=self.my_team_role,

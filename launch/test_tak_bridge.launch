@@ -1,6 +1,6 @@
 <launch>
   <arg name="name" default="husky"/>
-  
+
   <node type="static_transform_publisher" pkg="tf2_ros" name="dummy2_utm_frame" args="587532 4582703 0 1.125737 0 0 utm map" />
 
   <!-- Settings for ATAK communications -->
@@ -8,8 +8,8 @@
   <arg name="team_name" default="Cyan" doc="The Team Name used by the robot on the ATAK system"/>
   <arg name="team_role" default="Team Member" doc="The Team Role used by the robot on the ATAK system"/>
   <!-- <arg name="tak_ip" default="192.168.17.121" doc="The IP address of the ATAK server"/> -->
-<!--   <arg name="tak_ip" default="tak.cmusei.dev" doc="The IP address of the ATAK server"/> -->
-  <arg name="tak_ip" default="10.13.0.10" doc="The IP address of the ATAK server"/>
+  <arg name="tak_ip" default="tak.cmusei.dev" doc="The IP address of the ATAK server"/>
+  <!-- <arg name="tak_ip" default="10.13.0.10" doc="The IP address of the ATAK server"/> -->
   <arg name="tak_port" default="8088" doc="The Port number on the ATAK server to connect to"/>
   <arg name="baselink_frame" default="base_link" doc="The base link frame of the robot"/>
   <arg name="map_frame" default="map" doc="The global coordinate frame used to send global locations to ATAK"/>
@@ -26,14 +26,14 @@
         <param name="baselink_frame" value="$(arg baselink_frame)" />
         <param name="map_frame" value="$(arg map_frame)" />
     </node>
- 
+
     <node name="test_robot" pkg="atak_bridge" type="test_robot.py" output="screen">
         <param name="name" value="$(arg name)" />
         <param name="baselink_frame" value="$(arg baselink_frame)" />
         <param name="map_frame" value="$(arg map_frame)" />
     </node>
   </group>
-  
+
 </launch>
 
 
