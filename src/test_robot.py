@@ -107,7 +107,7 @@ if __name__ == '__main__':
         rate = rospy.Rate(loop_hz) 
         while not rospy.is_shutdown():
             sim_robot.sim_robot_move()
-            #sim_robot.publish_targets()
+            sim_robot.publish_targets()
             rate.sleep()
         
     except rospy.ROSInterruptException:

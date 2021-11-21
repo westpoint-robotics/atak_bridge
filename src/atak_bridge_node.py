@@ -94,9 +94,11 @@ class AtakBridge:
             c_id =  self.robot_name + item.description.data
             # rospy.loginfo("Recieved a target of type: %s and sending with ID of: %s" % (item.description.data,c_id))
             try:
-                self.takserver.send(mkcot.mkcot(cot_identity="neutral", 
+                rospy.loginfo("===   Publishing enemy location") 
+                self.takserver.send(mkcot.mkcot(
+                    cot_identity="neutral", 
                     cot_stale = 1, 
-                    cot_type="a-n-G-I-c", # TODO find a beter cot type and icon
+                    cot_type="a-h-G", # TODO find a beter cot type and icon
                     cot_how="m-g", 
                     cot_callsign=item.description.data, 
                     cot_id= c_id, 
@@ -147,7 +149,7 @@ class AtakBridge:
         try: # TODO Use a non-blocking read of the socket
             cotresponse = self.takserver.readcot(readtimeout=1) # This is a blocking read for 1 second.
             cot_xml = cotresponse[0]
-            # rospy.loginfo("COT XML:\n%s\n" %(cot_xml))
+            rospy.loginfo("COT XML:\n%s\n" %(cot_xml))
 
             if (len(cot_xml)>1):
                 rospy.loginfo("COT XML2:\n%s\n" %(cot_xml))
