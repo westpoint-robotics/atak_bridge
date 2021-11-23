@@ -27,6 +27,7 @@ import tf
 from visualization_msgs.msg import Marker
 from geometry_msgs.msg import PoseStamped, Pose
 from atak_bridge.msg import PoseDescriptionStamped, PoseDescriptionArray
+from nav_msgs.msg import Path
 
 from takpak.mkcot import mkcot
 from takpak.takcot import takcot
@@ -55,16 +56,29 @@ class AtakBridge:
 
         self.vis_pub = rospy.Publisher("goal_marker", Marker, queue_size=10) # TODO add this back in as a debug ability
         self.goal_pub = rospy.Publisher("goto_goal", PoseDescriptionStamped, queue_size=10)
+        self.path_pub = rospy.Publisher("atak_path", Path, queue_size=10)
         rospy.Subscriber("object_location", PoseDescriptionArray, self.objects_location_cb)
 
         rospy.loginfo("===   Attempting to lookup a transform from %s to %s" %('utm', self.baselink_frame))
         self.tf1_listener = tf.TransformListener()
-        self.tf1_listener.waitForTransform('utm', self.baselink_frame, rospy.Time(0), rospy.Duration(35.0))
+        self.wait_for_transform()
+#        self.tf1_listener.waitForTransform('utm', self.baselink_frame, rospy.Time(0), rospy.Duration(35.0))
         rospy.loginfo("===   Transform lookup succeeded")
 
         rospy.loginfo("Started ATAK Bridge with the following:\n\t\tCallsign: %s\n\t\tUID: %s\n\t\tTeam name: %s"
                     %(self.my_callsign,self.my_uid,self.my_team_name))
         self.takserver = takcot() #TODO add a timeout and exit condition
+        
+    def wait_for_transform(self):
+        while not rospy.is_shutdown():
+            try:
+                trans = self.tf1_listener.lookupTransform('utm', self.baselink_frame, rospy.Time(0))
+                rospy.loginfo("===   The atak_bridge FOUND ros transform utm -> %s" %(self.baselink_frame)) 
+                break               
+            except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+                rospy.loginfo("===   The atak_bridge is waiting for ros transform utm -> %s" %(self.baselink_frame))
+                rospy.sleep(1)
+                continue
 
     def objects_location_cb(self, data):
         # rospy.loginfo(data)
@@ -80,12 +94,14 @@ class AtakBridge:
             c_id =  self.robot_name + item.description.data
             # rospy.loginfo("Recieved a target of type: %s and sending with ID of: %s" % (item.description.data,c_id))
             try:
-                self.takserver.send(mkcot.mkcot(cot_identity="neutral", 
+                self.takserver.send(mkcot.mkcot(
+                    cot_identity="neutral", 
                     cot_stale = 1, 
-                    cot_type="a-n-G-I-c", # TODO find a beter cot type and icon
-                    cot_how="m-g", 
+                    cot_type="a-h-G", # Change to f for friendly and h for hostile icon
+                    cot_how="h-g-i-g-o", 
                     cot_callsign=item.description.data, 
-                    cot_id= c_id, 
+                    cot_id= c_id,
+                    archive_attr="ll", 
                     # team_name=self.my_team_name, 
                     team_name='yellow', 
                     team_role=self.my_team_role,
@@ -133,23 +149,57 @@ class AtakBridge:
         try: # TODO Use a non-blocking read of the socket
             cotresponse = self.takserver.readcot(readtimeout=1) # This is a blocking read for 1 second.
             cot_xml = cotresponse[0]
+            # rospy.loginfo("COT XML:\n%s\n" %(cot_xml))
+
             if (len(cot_xml)>1):
-                #rospy.loginfo("COT XML:\n%s\n" %(cot_xml))
+                rospy.loginfo("COT XML2:\n%s\n" %(cot_xml))
                 self.takmsg_tree = ET.ElementTree(ET.fromstring(cot_xml))
-                msg_data = self.parse_takmsg_plugin()
-                if (len(msg_data) > 2):
-                    # send goto message to robot
-                    rospy.loginfo("\n============>  %s, %s, %s, %s\n" %(msg_data[0],msg_data[1],msg_data[2],msg_data[3])) 
+                #msg_uid = self.takmsg_tree.find("./event").attrib['uid']
+                msg_data = self.parse_takmsg_goto()
+                msg_data = self.parse_takmsg_route()
+                # if (len(msg_data) > 2):
+                #     # send goto message to robot
+                #     rospy.loginfo("\n============>  %s, %s, %s, %s\n" %(msg_data[0],msg_data[1],msg_data[2],msg_data[3])) 
         except:
             rospy.logdebug("Read Cot failed: %s" % (sys.exc_info()[0]))
 
-    def parse_takmsg_plugin(self):
+    def parse_takmsg_route(self):
+        try:
+            msg_type = self.takmsg_tree.getroot().attrib['type']
+            if msg_type == 'b-m-r':
+                route_callsign = self.takmsg_tree.find("./detail/contact").attrib['callsign'].lower()
+                if self.my_callsign in route_callsign: 
+                    rospy.loginfo("============> REMARKS ARE: %s\n " %route_callsign)
+                    robot_path = Path()
+                    robot_path.header.stamp = rospy.Time.now()
+                    robot_path.header.frame_id = 'utm'
+                    waypoints = self.takmsg_tree.findall("./detail/link")
+                    for wp in waypoints:
+                        pnt_str = wp.attrib['point'].split(",")
+                        (lat,lon) = (float(pnt_str[0]),float(pnt_str[1])) 
+                        (zone,crnt_utm_e,crnt_utm_n) = LLtoUTM(23, lat, lon)
+                        rospy.loginfo("waypoint is: %f, %f" %(crnt_utm_e,crnt_utm_n))
+                        wp_pose = PoseStamped()
+                        wp_pose.header = robot_path.header
+                        wp_pose.pose.position.x = float(crnt_utm_e)
+                        wp_pose.pose.position.y = float(crnt_utm_n)
+                        wp_pose.pose.orientation.w = 1
+                        robot_path.poses.append(wp_pose)
+                    self.path_pub.publish(robot_path)
+                    
+                    # if 'husky1' in msg_callsign:
+                    rospy.loginfo("============> got route\n ") 
+
+        except Exception as e:
+            rospy.logwarn("\n\n----- Recieved ATAK Message and have an error of: "+ str(e) + '\n\n')            
+
+
+    def parse_takmsg_goto(self):
         try:                
-            msg_tree = self.takmsg_tree.getroot()            
-            if not(msg_tree in (-1, None)):
-                msg_uid = msg_tree.attrib['uid']
+            msg_root = self.takmsg_tree.getroot()            
+            if not(msg_root in (-1, None)):
+                msg_uid = msg_root.attrib['uid']
                 robot_uid = self.robot_name + '_goto'
-                #if (robot_uid == msg_uid):
                 rospy.loginfo("Mesage UID: %s",msg_uid)
                 if (self.robot_msg_uid == msg_uid):
                     lat = float(self.takmsg_tree.find("./point").attrib['lat'])
