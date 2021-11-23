@@ -78,7 +78,7 @@ class mkcot:
         , tgt_call=False
         , tgt_uid=False
         , tgt_msg=False
-        , archive_attr =''
+        , link2_attr =''
         ):
     
         # Get the current time and convert to CoT XML
@@ -134,20 +134,19 @@ class mkcot:
         else:
             precision_attr = None
 
-        if archive_attr != "" :
+        if link2_attr != "" :
             production_time=gmtime(time() + (60 * cot_stale))
             production_time_xml = strftime(datetime_strfmt,production_time)
-            archive_attr = {
+            link2_attr = {
                 "uid":"ANDROID-b65d628f341350bc",
                 "production_time":production_time_xml,
                 "type":"a-f-G-U-C",
                 "parent_callsign":"ANKER",
                 "relation":"p-p",
             }
-            print "\n\nHave archive\n\n"
 
         else:
-            archive_attr = None
+            link2_attr = None
 
         # if not a geochat we always have to include the contact block
         if not tgt_call and not cot_point:
@@ -249,7 +248,6 @@ class mkcot:
         # Create Detail element, save the handle
         detail = et.SubElement(cot, 'detail')
 
-
         # Now add some subelements to detail
         # Geochat has different required elements
         if tgt_call:  # target_call means a geochat
@@ -271,8 +269,8 @@ class mkcot:
 
         if not cot_ping:
             # Add the contact block, needed except for pings
-            if archive_attr:
-                et.SubElement(detail,'link', attrib=archive_attr)
+            if link2_attr:
+                et.SubElement(detail,'link', attrib=link2_attr)
                 group_attr=''
 
             if contact_attr:
@@ -299,5 +297,5 @@ class mkcot:
         # Prepend the XML header
         cot_xml = b'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' + b'\n' + et.tostring(cot)
         #cot_xml = et.tostring(cot)
-        print "sent:\n" + cot_xml
+        #print(cot_xml)
         return cot_xml

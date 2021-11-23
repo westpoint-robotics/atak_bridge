@@ -94,7 +94,6 @@ class AtakBridge:
             c_id =  self.robot_name + item.description.data
             # rospy.loginfo("Recieved a target of type: %s and sending with ID of: %s" % (item.description.data,c_id))
             try:
-                rospy.loginfo("===   Publishing enemy location") 
                 self.takserver.send(mkcot.mkcot(
                     cot_identity="neutral", 
                     cot_stale = 1, 
@@ -150,7 +149,7 @@ class AtakBridge:
         try: # TODO Use a non-blocking read of the socket
             cotresponse = self.takserver.readcot(readtimeout=1) # This is a blocking read for 1 second.
             cot_xml = cotresponse[0]
-            rospy.loginfo("COT XML:\n%s\n" %(cot_xml))
+            # rospy.loginfo("COT XML:\n%s\n" %(cot_xml))
 
             if (len(cot_xml)>1):
                 rospy.loginfo("COT XML2:\n%s\n" %(cot_xml))
@@ -168,25 +167,28 @@ class AtakBridge:
         try:
             msg_type = self.takmsg_tree.getroot().attrib['type']
             if msg_type == 'b-m-r':
-                robot_path = Path()
-                robot_path.header.stamp = rospy.Time.now()
-                robot_path.header.frame_id = 'utm'
-                waypoints = self.takmsg_tree.findall("./detail/link")
-                for wp in waypoints:
-                    pnt_str = wp.attrib['point'].split(",")
-                    (lat,lon) = (float(pnt_str[0]),float(pnt_str[1])) 
-                    (zone,crnt_utm_e,crnt_utm_n) = LLtoUTM(23, lat, lon)
-                    rospy.loginfo("waypoint is: %f, %f" %(crnt_utm_e,crnt_utm_n))
-                    wp_pose = PoseStamped()
-                    wp_pose.header = robot_path.header
-                    wp_pose.pose.position.x = float(crnt_utm_e)
-                    wp_pose.pose.position.y = float(crnt_utm_n)
-                    wp_pose.pose.orientation.w = 1
-                    robot_path.poses.append(wp_pose)
-                self.path_pub.publish(robot_path)
+                route_callsign = self.takmsg_tree.find("./detail/contact").attrib['callsign'].lower()
+                if self.my_callsign in route_callsign: 
+                    rospy.loginfo("============> REMARKS ARE: %s\n " %route_callsign)
+                    robot_path = Path()
+                    robot_path.header.stamp = rospy.Time.now()
+                    robot_path.header.frame_id = 'utm'
+                    waypoints = self.takmsg_tree.findall("./detail/link")
+                    for wp in waypoints:
+                        pnt_str = wp.attrib['point'].split(",")
+                        (lat,lon) = (float(pnt_str[0]),float(pnt_str[1])) 
+                        (zone,crnt_utm_e,crnt_utm_n) = LLtoUTM(23, lat, lon)
+                        rospy.loginfo("waypoint is: %f, %f" %(crnt_utm_e,crnt_utm_n))
+                        wp_pose = PoseStamped()
+                        wp_pose.header = robot_path.header
+                        wp_pose.pose.position.x = float(crnt_utm_e)
+                        wp_pose.pose.position.y = float(crnt_utm_n)
+                        wp_pose.pose.orientation.w = 1
+                        robot_path.poses.append(wp_pose)
+                    self.path_pub.publish(robot_path)
                     
-                # if 'husky1' in msg_callsign:
-                rospy.loginfo("============> got route\n ") 
+                    # if 'husky1' in msg_callsign:
+                    rospy.loginfo("============> got route\n ") 
 
         except Exception as e:
             rospy.logwarn("\n\n----- Recieved ATAK Message and have an error of: "+ str(e) + '\n\n')            

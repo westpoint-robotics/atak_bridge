@@ -28,7 +28,7 @@
 	</detail>
 </event>
 
-<!-- Below is a position update message from and android phone -->
+<!-- Below is a position update message from an android phone -->
 <?xml version="1.0" encoding="UTF-8"?>
 <event version="2.0" uid="ANDROID-a4d683ba2030aebd" type="a-f-G-U-C" time="2021-09-22T10:30:52Z" start="2021-09-25T03:45:52.787Z" stale="2021-09-25T03:52:07.787Z" how="m-g">
 	<point lat="41.380263" lon="-73.972277" hae="206.293" ce="9.9" le="9999999.0"/>
