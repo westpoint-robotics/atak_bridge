@@ -147,7 +147,7 @@ class AtakBridge:
         # Listen to the server and get message sent
         cotresponse =''
         try: # TODO Use a non-blocking read of the socket
-            cotresponse = self.takserver.readcot(readtimeout=1) # This is a blocking read for 1 second.
+            cotresponse = self.takserver.readcot(readtimeout=0.1) # This is a blocking read for 1 second.
             cot_xml = cotresponse[0]
             # rospy.loginfo("COT XML:\n%s\n" %(cot_xml))
 
