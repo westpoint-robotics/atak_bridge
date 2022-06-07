@@ -1,5 +1,5 @@
 <launch>
-  <arg name="name" default="husky"/>
+  <arg name="name" default="Eros"/>
   
   <node type="static_transform_publisher" pkg="tf2_ros" name="dummy2_utm_frame" args="587532 4582703 0 0 0 0 utm map" />
 
@@ -7,14 +7,13 @@
   <arg name="callsign" default="$(arg name)" doc="The callsign used by the robot on the ATAK system"/>
   <arg name="team_name" default="Cyan" doc="The Team Name used by the robot on the ATAK system"/>
   <arg name="team_role" default="Team Member" doc="The Team Role used by the robot on the ATAK system"/>
-  <!-- <arg name="tak_ip" default="192.168.17.121" doc="The IP address of the ATAK server"/> -->
   <arg name="tak_ip" default="tak.cmusei.dev" doc="The IP address of the ATAK server"/>
   <arg name="tak_port" default="8088" doc="The Port number on the ATAK server to connect to"/>
   <arg name="baselink_frame" default="base_link" doc="The base link frame of the robot"/>
   <arg name="map_frame" default="map" doc="The global coordinate frame used to send global locations to ATAK"/>
   <arg name="robot_msg_uid" default="husky1_goto" doc="Used to identify ATAK Messages that are meant for this robot"/>
 
-  <group ns="$(arg name)/atak">
+  <group ns="atak">
     <node name="atak_bridge" pkg="atak_bridge" type="atak_bridge_node.py" output="screen">
         <param name="name" value="$(arg name)" />
         <param name="callsign" value="$(arg callsign)" />
