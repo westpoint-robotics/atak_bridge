@@ -53,7 +53,7 @@ class AtakBridge:
         self.robot_msg_uid        = rospy.get_param('~robot_msg_uid', 'warty1_goto') # ID used to figure out if this message belongs to this robot
         self.zone='18T'
         self.takmsg_tree = ''
-
+        
         self.vis_pub = rospy.Publisher("goal_marker", Marker, queue_size=10) # TODO add this back in as a debug ability
         self.goal_pub = rospy.Publisher("goto_goal", PoseDescriptionStamped, queue_size=10)
         self.path_pub = rospy.Publisher("atak_path", Path, queue_size=10)
@@ -94,19 +94,36 @@ class AtakBridge:
             c_id =  self.robot_name + item.description.data
             # rospy.loginfo("Recieved a target of type: %s and sending with ID of: %s" % (item.description.data,c_id))
             try:
-                self.takserver.send(mkcot.mkcot(
-                    cot_identity="neutral", 
-                    cot_stale = 1, 
-                    cot_type="a-h-G", # Change to f for friendly and h for hostile icon
-                    cot_how="h-g-i-g-o", 
-                    cot_callsign=item.description.data, 
-                    cot_id= c_id,
-                    archive_attr="ll", 
-                    # team_name=self.my_team_name, 
-                    team_name='yellow', 
-                    team_role=self.my_team_role,
-                    cot_lat=obj_latitude,
-                    cot_lon=obj_longitude ))
+                obj_class= item.description.data.split("_")[0] #Object description is: <ClassName>_<ObjID>. See atak_client.py for tracked classes
+                
+                if (obj_class=="People" or obj_class=="vehicle"): #Object is a friend
+                    self.takserver.send(mkcot.mkcot(
+                        cot_identity="neutral", 
+                        cot_stale = 1, 
+                        cot_type="a-f-G", # Change to f for friendly and h for hostile icon
+                        cot_how="h-g-i-g-o", 
+                        cot_callsign=item.description.data, 
+                        cot_id= c_id,
+                        link2_attr="ll", 
+                        # team_name=self.my_team_name, 
+                        team_name='blue', 
+                        team_role=self.my_team_role,
+                        cot_lat=obj_latitude,
+                        cot_lon=obj_longitude ))
+                else: #Object is an enemy
+                    self.takserver.send(mkcot.mkcot(
+                        cot_identity="neutral", 
+                        cot_stale = 1, 
+                        cot_type="a-h-G", # Change to f for friendly and h for hostile icon
+                        cot_how="h-g-i-g-o", 
+                        cot_callsign=item.description.data, 
+                        cot_id= c_id,
+                        link2_attr="ll", 
+                        # team_name=self.my_team_name, 
+                        team_name='red', 
+                        team_role=self.my_team_role,
+                        cot_lat=obj_latitude,
+                        cot_lon=obj_longitude ))
             except:
                 rospy.logdebug("Read Cot failed: %s" % (sys.exc_info()[0]))                    
 
@@ -167,28 +184,28 @@ class AtakBridge:
         try:
             msg_type = self.takmsg_tree.getroot().attrib['type']
             if msg_type == 'b-m-r':
-                route_callsign = self.takmsg_tree.find("./detail/contact").attrib['callsign'].lower()
-                if self.my_callsign in route_callsign: 
-                    rospy.loginfo("============> REMARKS ARE: %s\n " %route_callsign)
-                    robot_path = Path()
-                    robot_path.header.stamp = rospy.Time.now()
-                    robot_path.header.frame_id = 'utm'
-                    waypoints = self.takmsg_tree.findall("./detail/link")
-                    for wp in waypoints:
-                        pnt_str = wp.attrib['point'].split(",")
-                        (lat,lon) = (float(pnt_str[0]),float(pnt_str[1])) 
-                        (zone,crnt_utm_e,crnt_utm_n) = LLtoUTM(23, lat, lon)
-                        rospy.loginfo("waypoint is: %f, %f" %(crnt_utm_e,crnt_utm_n))
-                        wp_pose = PoseStamped()
-                        wp_pose.header = robot_path.header
-                        wp_pose.pose.position.x = float(crnt_utm_e)
-                        wp_pose.pose.position.y = float(crnt_utm_n)
-                        wp_pose.pose.orientation.w = 1
-                        robot_path.poses.append(wp_pose)
-                    self.path_pub.publish(robot_path)
+#                route_callsign = self.takmsg_tree.find("./detail/contact").attrib['callsign'].lower()
+#                if self.my_callsign in route_callsign: 
+#                    rospy.loginfo("============> REMARKS ARE: %s\n " %route_callsign)
+                robot_path = Path()
+                robot_path.header.stamp = rospy.Time.now()
+                robot_path.header.frame_id = 'utm'
+                waypoints = self.takmsg_tree.findall("./detail/link")
+                for wp in waypoints:
+                    pnt_str = wp.attrib['point'].split(",")
+                    (lat,lon) = (float(pnt_str[0]),float(pnt_str[1])) 
+                    (zone,crnt_utm_e,crnt_utm_n) = LLtoUTM(23, lat, lon)
+                    rospy.loginfo("waypoint is: %f, %f" %(crnt_utm_e,crnt_utm_n))
+                    wp_pose = PoseStamped()
+                    wp_pose.header = robot_path.header
+                    wp_pose.pose.position.x = float(crnt_utm_e)
+                    wp_pose.pose.position.y = float(crnt_utm_n)
+                    wp_pose.pose.orientation.w = 1
+                    robot_path.poses.append(wp_pose)
+                self.path_pub.publish(robot_path) #Last statement in if-statement that was commented out (Lines 187-189)
                     
                     # if 'husky1' in msg_callsign:
-                    rospy.loginfo("============> got route\n ") 
+                rospy.loginfo("============> got route\n ") 
 
         except Exception as e:
             rospy.logwarn("\n\n----- Recieved ATAK Message and have an error of: "+ str(e) + '\n\n')            

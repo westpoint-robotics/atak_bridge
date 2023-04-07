@@ -140,7 +140,7 @@ class takcot():
             response = ''
             try:
                 while True:
-                    response += self.sock.recv(2048).decode('utf-8') #Decoding needed for code to work with Python 3
+                    response += self.sock.recv(2049)
 
             except socket.timeout:
 #                print("readit response is: ====================",len(response))
@@ -175,7 +175,7 @@ class takcot():
         # OK, we read something, now prepend the frag and clean it up
         if cotbuff:
             #cotbuff = bytes(frag,'utf-8') + cotbuff
-            cotbuff = frag + cotbuff #decoding removed from cotbuff since received data is decoded in sock.recv()
+            cotbuff = frag + cotbuff.decode('utf-8')
         else:
             #cotbuff = bytes(frag,'utf-8')
             cotbuff = frag

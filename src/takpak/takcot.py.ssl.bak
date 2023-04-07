@@ -9,6 +9,7 @@ import time
 
 import logging
 import socket
+import ssl
 
 class Error(Exception):
     """Base class for exceptions in this module."""
@@ -46,7 +47,24 @@ class takcot():
     def open(self, ip_address, port=8087):
         self.logger.debug(__name__ + " Opening: " + ip_address + ":" + str(port))
         try:
-            self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            if port == 8089:
+                # temp hardcode values for swatc-golf
+                hostname = 'takserver'  # from server certificate common name
+                cafile = 'tak.pem'
+                clfile = 'white.pem'
+                clkey = 'white-key.pem'
+
+                ctx = ssl.create_default_context()
+                ctx.load_verify_locations(cafile)
+                ctx.load_cert_chain(clfile, keyfile=clkey)
+                sock = ctx.wrap_socket(
+                    socket.socket(socket.AF_INET, socket.SOCK_STREAM),
+                    server_hostname=hostname
+                )
+            else:
+                self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+
             self.logger.debug(__name__ + " socket created")
         except:
             self.logger.error(__name__ + " socket create failed")
@@ -140,7 +158,7 @@ class takcot():
             response = ''
             try:
                 while True:
-                    response += self.sock.recv(2048).decode('utf-8') #Decoding needed for code to work with Python 3
+                    response += self.sock.recv(2049)
 
             except socket.timeout:
 #                print("readit response is: ====================",len(response))
@@ -175,7 +193,7 @@ class takcot():
         # OK, we read something, now prepend the frag and clean it up
         if cotbuff:
             #cotbuff = bytes(frag,'utf-8') + cotbuff
-            cotbuff = frag + cotbuff #decoding removed from cotbuff since received data is decoded in sock.recv()
+            cotbuff = frag + cotbuff.decode('utf-8')
         else:
             #cotbuff = bytes(frag,'utf-8')
             cotbuff = frag

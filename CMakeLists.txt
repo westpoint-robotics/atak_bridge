@@ -3,22 +3,16 @@ project(atak_bridge)
 
 set(CMAKE_BUILD_TYPE Release)
 
-# TODO update the cmake file and package.xml file to reflect dependencies and remove any reference to AI TF CPP code.
-## Compile as C++11, supported in ROS Kinetic and newer
-# add_compile_options(-std=c++11)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-  roscpp
   rospy
   sensor_msgs
   message_generation
 )
 
-## System dependencies are found with CMake's conventions
-# find_package(Boost REQUIRED COMPONENTS system)
 
 ################################################
 ## Declare ROS messages, services and actions ##
@@ -41,34 +35,18 @@ find_package(catkin REQUIRED COMPONENTS
  )
 
 
-###################################
-## catkin specific configuration ##
-###################################
+#######################################
+## Declare Catkin package 
+#######################################
 
 catkin_package(
-#  INCLUDE_DIRS include
-#  LIBRARIES atak_bridge
+  INCLUDE_DIRS include
+  LIBRARIES ${PROJECT_NAME}
   CATKIN_DEPENDS message_runtime #roscpp rospy sensor_msgs
-#  DEPENDS system_lib
+  DEPENDS 
 )
 
-install(DIRECTORY src
-    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-    FILES_MATCHING PATTERN "*.py"
-    PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ GROUP_EXECUTE GROUP_READ
-    )
+include_directories(include 
+    ${catkin_INCLUDE_DIRS} 
+)
 
-install(PROGRAMS
-    src/takpak/mkcot.py
-    src/takpak/takcot.py
-    src/takpak/__init__.py
-    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}/takpak
-)
-## Mark other files for installation (e.g. launch and bag files, etc.)
-install(DIRECTORY launch
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
-)
-## Mark other files for installation (e.g. launch and bag files, etc.)
-install(DIRECTORY msg
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
-)
