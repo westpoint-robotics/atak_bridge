@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python3
 
 from __future__ import (absolute_import, division,
                         print_function, unicode_literals)
@@ -8,7 +8,7 @@ from __future__ import (absolute_import, division,
 
 rosrun tf2_ros static_transform_publisher 587361 4582574 0 0 0 1.571 utm husky/map
 '''
-
+import traceback
 import os
 import sys
 import time
@@ -123,10 +123,12 @@ class AtakBridge:
         rospy.loginfo("============ Connecting to  TAK Server at %s:%s ===============" %(self.tak_ip,self.tak_port))
         rospy.loginfo("==== If the code appears to freeze at this point, then it is likely the server is not reachable  =====")    
         try:
-            tasksock = self.takserver.open(self.tak_ip, self.tak_port)
+            #tasksock = self.takserver.open(self.tak_ip, self.tak_port)
+            self.takserver.open(self.tak_ip, self.tak_port)
             self.takserver.flush()          
         except:
             rospy.logerr("Failed to connect to the TAK Server")
+            print(traceback.format_exc())
             exit()
 
         # Send a ping and check for answer
