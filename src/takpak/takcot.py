@@ -46,7 +46,7 @@ class takcot():
         self.sock = None
         
     #def open(self, ip_address, port=8087):# use_ssl=False, cert_file='user2.p12', cert_password=None): #8087
-    def open(self, ip_address, port=8089, cert_path='~/catkin_ws/src/atak_bridge/src/user2.pem'):
+    def open(self, ip_address, port=8089, cert_path='~/catkin_ws/src/atak_bridge/src/user2.p12'):
         self.logger.info(__name__ + " Opening: " + ip_address + ":" + str(port))
         print("\n Starting open, doing the SSL stuff here!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n")
         try:
@@ -59,12 +59,17 @@ class takcot():
                 print(f"Certificate file not found: {cert_path}")
                 return None
 
+            ##cryptology_functions.convert_cert(cert_path, cert_password)
+
+
             # Creating a standard socket
             self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             print(__name__ + " socket created")
 
             # Wrapping socket with SSL
-            context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
+            #context.load_cert_chain(certfile='path/to/client.p12', password='your_password')
+            context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+            
             context.load_verify_locations(cert_path)
             # Allow self-signed certificates
             context.check_hostname = False
