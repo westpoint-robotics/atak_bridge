@@ -64,6 +64,13 @@ install(PROGRAMS
     src/takpak/__init__.py
     DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}/takpak
 )
+install(PROGRAMS
+    src/takpak/mkcot.py
+    src/takpak/takcot.py
+    src/takpak/atak_listener.py
+    src/takpak/__init__.py
+    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}/takpak
+)
 ## Mark other files for installation (e.g. launch and bag files, etc.)
 install(DIRECTORY launch
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}

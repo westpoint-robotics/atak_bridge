@@ -8,6 +8,7 @@ import os
 import sys
 #from time import sleep,gmtime,strftime
 import time
+import pytak
 
 import logging
 import socket
@@ -46,39 +47,38 @@ class takcot():
         self.sock = None
         
     #def open(self, ip_address, port=8087):# use_ssl=False, cert_file='user2.p12', cert_password=None): #8087
-    def open(self, ip_address, port=8089, cert_path='~/catkin_ws/src/atak_bridge/src/user2.p12'):
+    def open(self, ip_address, port=8089, cert_path='~/catkin_ws/src/atak_bridge/src/user2.pem', key_path='~/catkin_ws/src/atak_bridge/src/user2.key'):
         self.logger.info(__name__ + " Opening: " + ip_address + ":" + str(port))
         print("\n Starting open, doing the SSL stuff here!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n")
         try:
-
             cert_path = os.path.expanduser(cert_path)
+            key_path = os.path.expanduser(key_path)
             print(__name__ + " Resolved cert_path: " + cert_path)
+            print(__name__ + " Resolved key_path: " + key_path)
 
-            # Check if the certificate file exists
+            # Check if the certificate and key files exist
             if not os.path.isfile(cert_path):
                 print(f"Certificate file not found: {cert_path}")
                 return None
-
-            ##cryptology_functions.convert_cert(cert_path, cert_password)
-
+            if not os.path.isfile(key_path):
+                print(f"Key file not found: {key_path}")
+                return None
 
             # Creating a standard socket
             self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             print(__name__ + " socket created")
 
             # Wrapping socket with SSL
-            #context.load_cert_chain(certfile='path/to/client.p12', password='your_password')
-            context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
-            
-            context.load_verify_locations(cert_path)
+            context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
+            context.load_cert_chain(certfile=cert_path, keyfile=key_path, password="atakatak")
             # Allow self-signed certificates
             context.check_hostname = False
             context.verify_mode = ssl.CERT_NONE
             self.sock = context.wrap_socket(self.sock, server_hostname=ip_address)
             print("Loaded cert_path " + cert_path)
+            print("Loaded key_path " + key_path)
 
             print(f"{__name__} Opening Secure Socket")
-            #-------------------------------------------------------------------------
             self.sock.connect((ip_address, port))
             print(f"{__name__} Connected successfully to {ip_address}:{port}")
         except ssl.SSLCertVerificationError as e:
@@ -264,7 +264,48 @@ class takcot():
 
         cotbuff=cotbuff.replace("\n","")
 
-        #print("cleaned cotbuff is:")
+        #print("cleaned cotbuff is:")ef open(self, ip_address, port=8089, cert_path='~/catkin_ws/src/atak_bridge/src/user2.pem'):
+        self.logger.info(__name__ + " Opening: " + ip_address + ":" + str(port))
+        print("\n Starting open, doing the SSL stuff here!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n")
+        try:
+
+            cert_path = os.path.expanduser(cert_path)
+            print(__name__ + " Resolved cert_path: " + cert_path)
+
+            # Check if the certificate file exists
+            if not os.path.isfile(cert_path):
+                print(f"Certificate file not found: {cert_path}")
+                return None
+
+            ##cryptology_functions.convert_cert(cert_path, cert_password)
+
+
+            # Creating a standard socket
+            self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            print(__name__ + " socket created")
+
+            # Wrapping socket with SSL
+            #context.load_cert_chain(certfile='path/to/client.p12', password='your_password')
+            context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
+            
+            context.load_verify_locations(cert_path)
+            # Allow self-signed certificates
+            context.check_hostname = False
+            context.verify_mode = ssl.CERT_NONE
+            self.sock = context.wrap_socket(self.sock, server_hostname=ip_address)
+            print("Loaded cert_path " + cert_path)
+
+            print(f"{__name__} Opening Secure Socket")
+            #-------------------------------------------------------------------------
+            self.sock.connect((ip_address, port))
+            print(f"{__name__} Connected successfully to {ip_address}:{port}")
+        except ssl.SSLCertVerificationError as e:
+            print(f"Cert validation failed: {str(e)}")
+            self.sock = None
+        except Exception as e:
+            print(f"Cannot connect to {ip_address}:{port}. Error: {str(e)}")
+            self.sock = None
+        return self.sock
         #print(cotbuff)
         #print(type(cotbuff))
         #print()
