@@ -1,18 +1,20 @@
 <launch>
-  <arg name="name" default="atak_listener"/>
+  <arg name="name" default="path_plotter"/>
   
   <!-- Settings for ATAK communications -->
   <arg name="tak_ip" default="hermes.westpoint.edu" doc="The IP address of the ATAK server"/>
   <arg name="tak_port" default="8089" doc="The Port number on the ATAK server to connect to"/>
-  <arg name="cert_path" default="~/catkin_ws/src/atak_bridge/src/user2.pem" doc="The path to the certificate file"/>
-  <arg name="key_path" default="~/catkin_ws/src/atak_bridge/src/user2.key" doc="The path to the key file"/>
+  <arg name="cert_path" default="$(find atak_bridge)/src/user2.pem" doc="The path to the certificate file"/>
+  <arg name="key_path" default="$(find atak_bridge)/src/user2.key" doc="The path to the key file"/>
   <arg name="password" default="atakatak" doc="The password for the certificate file"/>
+  <arg name="csv_file_path" default="$(find atak_bridge)/src/takpak/Output_Path.csv" doc="The path to the CSV file containing the path"/>
 
-  <node name="atak_listener" pkg="atak_bridge" type="atak_listener.py" output="screen">
+  <node name="path_plotter" pkg="atak_bridge" type="plot_path.py" output="screen">
     <param name="tak_ip" value="$(arg tak_ip)" />
     <param name="tak_port" value="$(arg tak_port)" />
     <param name="cert_path" value="$(arg cert_path)" />
     <param name="key_path" value="$(arg key_path)" />
     <param name="password" value="$(arg password)" />
+    <param name="csv_file_path" value="$(arg csv_file_path)" />
   </node>
 </launch>

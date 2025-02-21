@@ -6,7 +6,10 @@ import socket
 import xml.etree.ElementTree as ET
 import csv
 import rospy
-from takpak.takcot import takcot
+import pytak
+import select
+import threading
+import time
 
 class AtakListener:
     def __init__(self, ip_address, port, cert_path, key_path, password):
@@ -16,7 +19,26 @@ class AtakListener:
         self.key_path = os.path.expanduser(key_path)
         self.password = password
         self.sock = None
-        self.takserver = takcot()
+        self.ssl_context = self.create_ssl_context()
+
+        # Clear the CSV file at the start
+        self.clear_csv_file()
+
+    def create_ssl_context(self):
+        context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+        context.load_cert_chain(certfile=self.cert_path, keyfile=self.key_path, password=self.password)
+        context.check_hostname = False
+        context.verify_mode = ssl.CERT_NONE
+        return context
+
+    def clear_csv_file(self):
+        # Get the directory of the current script
+        script_dir = os.path.dirname(os.path.realpath(__file__))
+        csv_file_path = os.path.join(script_dir, 'fly_zones.csv')
+        # Open the file in write mode to clear it
+        with open(csv_file_path, mode='w', newline='') as file:
+            pass
+        rospy.loginfo(f"Cleared CSV file at: {csv_file_path}")
 
     def connect(self):
         try:
@@ -28,45 +50,127 @@ class AtakListener:
                 rospy.logerr(f"Key file not found: {self.key_path}")
                 return False
 
-            # Connect to the TAK server
-            self.sock = self.takserver.open(self.ip_address, self.port, self.cert_path, self.key_path, self.password)
-            if self.sock:
-                rospy.loginfo(f"Connected successfully to {self.ip_address}:{self.port}")
-                return True
-            else:
-                rospy.logerr(f"Failed to connect to {self.ip_address}:{self.port}")
-                return False
+            # Creating a standard socket
+            self.sock = socket.create_connection((self.ip_address, self.port))
+            self.sock = self.ssl_context.wrap_socket(self.sock, server_hostname=self.ip_address)
+            self.sock.setblocking(False)  # Set the socket to non-blocking mode
+            rospy.loginfo(f"Connected successfully to {self.ip_address}:{self.port}")
+            return True
+        except ssl.SSLCertVerificationError as e:
+            rospy.logerr(f"Cert validation failed: {str(e)}")
+            self.sock = None
+            return False
         except Exception as e:
             rospy.logerr(f"Cannot connect to {self.ip_address}:{self.port}. Error: {str(e)}")
+            self.sock = None
             return False
 
     def listen(self):
         try:
             while not rospy.is_shutdown():
-                data = self.sock.recv(2048)
-                if data:
-                    self.process_message(data)
+                try:
+                    # Use select to wait for incoming data
+                    ready_to_read, _, _ = select.select([self.sock], [], [], 1.0)
+                    if ready_to_read:
+                        data = self.sock.recv(2048)
+                        if data:
+                            self.process_message(data)
+                        else:
+                            rospy.logwarn("No data received, continuing to listen...")
+                except Exception as e:
+                    rospy.logerr(f"Error while listening: {str(e)}")
+                    break
         except Exception as e:
-            rospy.logerr(f"Error while listening: {str(e)}")
+            rospy.logerr(f"Error in listen loop: {str(e)}")
 
     def process_message(self, data):
         try:
+            rospy.loginfo(f"Received data: {data}")
             root = ET.fromstring(data)
-            # Extract shape information from the message
-            # This is an example, adjust according to your message structure
-            for shape in root.findall(".//shape"):
-                shape_type = shape.get("type")
-                coordinates = shape.find("coordinates").text
-                self.write_to_csv(shape_type, coordinates)
-                rospy.loginfo(f"Received shape: {shape_type} with coordinates: {coordinates}")
+            # Check if the message is for "Fly" or "NoFly"
+            contact = root.find(".//contact")
+            if contact is not None:
+                rospy.loginfo(f"Contact element found: {ET.tostring(contact)}")
+                callsign = contact.get("callsign").lower()
+                if callsign in ["fly", "nofly"]:
+                    rospy.loginfo(f"Message received for {callsign.capitalize()}")
+                    # Extract shape information from the message
+                    vertices = []
+                    for link in root.findall(".//link"):
+                        point = link.get("point")
+                        vertices.append(point)
+                    self.write_to_csv(callsign.capitalize(), vertices)
+                    rospy.loginfo(f"Received shape with vertices: {vertices}")
+                else:
+                    rospy.loginfo(f"Message received but not for Fly or NoFly, callsign: {callsign}")
+            else:
+                rospy.loginfo("No contact element found in the message")
         except Exception as e:
             rospy.logerr(f"Failed to process message: {str(e)}")
 
-    def write_to_csv(self, shape_type, coordinates):
-        with open('fly_zones.csv', mode='a', newline='') as file:
+    def write_to_csv(self, shape_type, vertices):
+        # Get the directory of the current script
+        script_dir = os.path.dirname(os.path.realpath(__file__))
+        csv_file_path = os.path.join(script_dir, 'fly_zones.csv')
+        rospy.loginfo(f"Writing to CSV file at: {csv_file_path}")
+        
+        with open(csv_file_path, mode='a', newline='') as file:
             writer = csv.writer(file)
-            writer.writerow([shape_type, coordinates])
-        rospy.loginfo(f"Written to CSV: {shape_type}, {coordinates}")
+            writer.writerow([shape_type] + vertices)
+        
+        rospy.loginfo(f"Written to CSV: {shape_type} with vertices: {vertices}")
+
+    def send_minesweeper_icon(self):
+        # Coordinates for West Point
+        lat = 41.3911146
+        lon = -73.9530166
+
+        # CoT message for MineSweeper icon
+        cot_message = f'''
+        <event version="2.0" uid="MineSweeper" type="a-f-G-U-C" time="2025-02-04T15:05:59Z" start="2025-02-04T15:05:59Z" stale="2025-02-04T15:06:05Z" how="m-g">
+            <point lat="{lat}" lon="{lon}" hae="9999999" ce="9999999.0" le="9999999.0" />
+            <detail>
+                <contact endpoint="*:-1:stcp" callsign="MineSweeper" />
+                <precisionlocation altsrc="GPS" geopointsrc="GPS" />
+                <__group role="Team Member" name="Cyan" />
+                <takv os="1" platform="atak_listener" version="1.1.0" />
+                <color argb="-1" />
+            </detail>
+        </event>
+        '''
+
+        self.send_cot_message(cot_message)
+
+    def send_cot_message(self, cotdata):
+        try:
+            self.sock.settimeout(0.5)  # 0 is non-blocking
+            if isinstance(cotdata, str):
+                cotdata = cotdata.encode('utf-8')  # Ensure data is encoded if it's a string
+            
+            sentdata = self.sock.send(cotdata)
+            if sentdata != len(cotdata):
+                rospy.logerr("Socket Send mismatch")
+                raise Exception("Socket Send mismatch")
+            rospy.loginfo("Data sent successfully")
+        except socket.timeout as e:
+            rospy.logerr(f"Socket Timeout: {str(e)}")
+            raise Exception("Socket Timeout")
+        except ssl.SSLZeroReturnError as e:
+            rospy.logerr(f"SSL connection has been closed (EOF): {str(e)}")
+            raise Exception("SSL connection has been closed (EOF)")
+        except Exception as e:
+            rospy.logerr(f"Send data failed: {str(e)}")
+            raise Exception("Send Failed")
+
+    def start_sending_minesweeper_icon(self, interval=0.5):
+        def send_periodically():
+            while not rospy.is_shutdown():
+                self.send_minesweeper_icon()
+                time.sleep(interval)
+
+        thread = threading.Thread(target=send_periodically)
+        thread.daemon = True
+        thread.start()
 
 if __name__ == "__main__":
     rospy.init_node('atak_listener')
@@ -78,4 +182,8 @@ if __name__ == "__main__":
 
     listener = AtakListener(ip_address, port, cert_path, key_path, password)
     if listener.connect():
+        listener.start_sending_minesweeper_icon()  # Periodically send the MineSweeper icon at West Point
         listener.listen()
+    else:
+        rospy.logerr("Failed to connect to the ATAK server.")
+        rospy.signal_shutdown("Failed to connect to the ATAK server.")
