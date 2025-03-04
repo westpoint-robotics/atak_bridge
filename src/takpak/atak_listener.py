@@ -39,7 +39,7 @@ class AtakListener:
         # Open the file in write mode to clear it and write headers
         with open(csv_file_path, mode='w', newline='') as file:
             writer = csv.writer(file)
-            writer.writerow(["Type", "Vertices"])  # Write headers
+            #writer.writerow(["Type", "Vertices"])  # Write headers
         rospy.loginfo(f"Cleared CSV file at: {csv_file_path}")
 
     def connect(self):
@@ -116,22 +116,26 @@ class AtakListener:
         csv_file_path = os.path.join(script_dir, 'fly_zones.csv')
         rospy.loginfo(f"Writing to CSV file at: {csv_file_path}")
 
-        # Ensure the CSV file exists and has headers
-        if not os.path.exists(csv_file_path) or os.path.getsize(csv_file_path) == 0:
-            df = pd.DataFrame(columns=["Type", "Vertices"])
-            df.to_csv(csv_file_path, index=False)
+        # Read the existing CSV file if it exists
+        if os.path.exists(csv_file_path):
+            with open(csv_file_path, mode='r') as file:
+                existing_data = file.readlines()
+        else:
+            existing_data = []
 
-        # Read the existing CSV file
-        df = pd.read_csv(csv_file_path)
+        # Prepare new data to be written
+        new_data = []
+        for point in vertices:
+            lat, lon = point.split(',')[:2]  # Extract lat and lon from the point
+            new_data.append(f"{lat},{lon}\n")
+        new_data.append("\n")  # Add an empty row after each shape
 
-        # Create new row
-        new_row = pd.DataFrame({"Type": [shape_type], "Vertices": [" ".join(vertices)]})
-
-        # Append new row to DataFrame
-        df = pd.concat([df, new_row], ignore_index=True)
-
-        # Write DataFrame to CSV in rows
-        df.to_csv(csv_file_path, index=False)
+        # Write data to CSV file
+        with open(csv_file_path, mode='w', newline='') as file:
+            if shape_type == "Fly":
+                file.writelines(new_data + existing_data)  # Write Fly zones before existing data
+            else:
+                file.writelines(existing_data + new_data)  # Append NoFly zones after existing data
 
         rospy.loginfo(f"Written to CSV: {shape_type} with vertices: {vertices}")
 
