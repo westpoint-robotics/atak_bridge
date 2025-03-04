@@ -10,6 +10,7 @@ import pytak
 import select
 import threading
 import time
+import pandas as pd
 
 class AtakListener:
     def __init__(self, ip_address, port, cert_path, key_path, password):
@@ -35,9 +36,10 @@ class AtakListener:
         # Get the directory of the current script
         script_dir = os.path.dirname(os.path.realpath(__file__))
         csv_file_path = os.path.join(script_dir, 'fly_zones.csv')
-        # Open the file in write mode to clear it
+        # Open the file in write mode to clear it and write headers
         with open(csv_file_path, mode='w', newline='') as file:
-            pass
+            writer = csv.writer(file)
+            writer.writerow(["Type", "Vertices"])  # Write headers
         rospy.loginfo(f"Cleared CSV file at: {csv_file_path}")
 
     def connect(self):
@@ -113,11 +115,24 @@ class AtakListener:
         script_dir = os.path.dirname(os.path.realpath(__file__))
         csv_file_path = os.path.join(script_dir, 'fly_zones.csv')
         rospy.loginfo(f"Writing to CSV file at: {csv_file_path}")
-        
-        with open(csv_file_path, mode='a', newline='') as file:
-            writer = csv.writer(file)
-            writer.writerow([shape_type] + vertices)
-        
+
+        # Ensure the CSV file exists and has headers
+        if not os.path.exists(csv_file_path) or os.path.getsize(csv_file_path) == 0:
+            df = pd.DataFrame(columns=["Type", "Vertices"])
+            df.to_csv(csv_file_path, index=False)
+
+        # Read the existing CSV file
+        df = pd.read_csv(csv_file_path)
+
+        # Create new row
+        new_row = pd.DataFrame({"Type": [shape_type], "Vertices": [" ".join(vertices)]})
+
+        # Append new row to DataFrame
+        df = pd.concat([df, new_row], ignore_index=True)
+
+        # Write DataFrame to CSV in rows
+        df.to_csv(csv_file_path, index=False)
+
         rospy.loginfo(f"Written to CSV: {shape_type} with vertices: {vertices}")
 
     def send_minesweeper_icon(self):
