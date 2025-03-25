@@ -43,6 +43,7 @@ class AtakListener:
         rospy.loginfo(f"Cleared CSV file at: {csv_file_path}")
 
     def connect(self):
+        rospy.loginfo("Attempting to connect to ATAK server...")
         try:
             # Check if the certificate and key files exist
             if not os.path.isfile(self.cert_path):
@@ -68,6 +69,7 @@ class AtakListener:
             return False
 
     def listen(self):
+        rospy.loginfo("Starting to listen for incoming messages...")
         try:
             while not rospy.is_shutdown():
                 try:
@@ -76,6 +78,7 @@ class AtakListener:
                     if ready_to_read:
                         data = self.sock.recv(2048)
                         if data:
+                            rospy.loginfo(f"Data received: {data}")
                             self.process_message(data)
                         else:
                             rospy.logwarn("No data received, continuing to listen...")
@@ -103,12 +106,52 @@ class AtakListener:
                         vertices.append(point)
                     self.write_to_csv(callsign.capitalize(), vertices)
                     rospy.loginfo(f"Received shape with vertices: {vertices}")
+                elif callsign == "start":
+                    rospy.loginfo("Start marker received, setting as start point")
+                    self.update_csv_with_marker("start", root)
+                elif callsign == "end":
+                    rospy.loginfo("End marker received, setting as end point")
+                    self.update_csv_with_marker("end", root)
                 else:
-                    rospy.loginfo(f"Message received but not for Fly or NoFly, callsign: {callsign}")
+                    rospy.loginfo(f"Message received but not for Fly, NoFly, Start, or End, callsign: {callsign}")
             else:
                 rospy.loginfo("No contact element found in the message")
         except Exception as e:
             rospy.logerr(f"Failed to process message: {str(e)}")
+
+    def update_csv_with_marker(self, marker_type, root):
+        point = root.find(".//point")
+        if point is not None:
+            lat = point.get("lat")
+            lon = point.get("lon")
+            new_point = f"{lat},{lon}\n"
+
+            # Get the directory of the current script
+            script_dir = os.path.dirname(os.path.realpath(__file__))
+            csv_file_path = os.path.join(script_dir, 'fly_zones.csv')
+
+            # Read the existing CSV file
+            with open(csv_file_path, mode='r') as file:
+                existing_data = file.readlines()
+
+            if marker_type == "start":
+                # Update the first point
+                existing_data[0] = new_point
+            elif marker_type == "end":
+                # Update the last point
+                existing_data[-1] = new_point
+
+            # Ensure there is a separating line after the updated point
+            if existing_data[1] != "\n":
+                existing_data.insert(1, "\n")
+            if existing_data[-2] != "\n":
+                existing_data.insert(-1, "\n")
+
+            # Write the updated data back to the CSV file
+            with open(csv_file_path, mode='w', newline='') as file:
+                file.writelines(existing_data)
+
+            rospy.loginfo(f"Updated CSV with {marker_type} point: {new_point.strip()}")
 
     def write_to_csv(self, shape_type, vertices):
         # Get the directory of the current script
