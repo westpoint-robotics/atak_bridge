@@ -84,17 +84,16 @@ Ensure the following ROS packages are installed:
 The `atak_listener` listens for messages from ATAK and processes them into CSV files. It also provides a GUI for monitoring received data.
 
 #### Steps to Run:
-1. Launch a ROS core:
-   ```bash
-   roscore
-   ```
-
-2. Run the `atak_listener`:
+Make sure to source the workspace if you make any changes
+```bash
+source devel/setup.bash
+ ```
+1. Run the `atak_listener`:
    ```bash
    roslaunch atak_bridge atak_listener.py
    ```
 
-3. GUI Instructions:
+2. GUI Instructions:
    - Click the **Start** button to begin listening for messages.
    - The GUI will display counts and coordinates for Fly zones, NoFly zones, Start points, and End points.
    - Click the **End** button to stop the program and combine the CSV files into `User_input_total.csv`.
