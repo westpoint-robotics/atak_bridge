@@ -1,93 +1,161 @@
-# ROS to ATAK bridge
-## Notes
-- The ATAK Client code is based on work found at: https://github.com/pinztrek/takpak.git.
-    - The python code found in the takpak directory is modified versions of this code.
-    - Some of the python code found outside the takpak directory is based on example code provided by takpak.  
-- This code expects the ATAK User to have the RRC ATAK Plugin installed on the ATAK device. This is required for the "go to goal" behavior to work.
-- Tutorials on generic ATAK usage can be found at: https://www.youtube.com/playlist?list=PLD4gdaBHX0b7GpPkuy0mbPaCw9kG3YgfB
+Collecting workspace informationHere is a complete README.md file for your repository:
 
-## Requirement
-- ROS TF has a transform from  base_link – UTM. This is used to find the robot position in the global frame and the location of detected objects in the global frame.
-- The objects found provide their location relative to the frame specified in map_frame parameter.
-- Each object found has a unique name, usually the category name and a number
-    - Examples: people01, people02, car01, car02, car03.
-    - atak_bridge creates an object message uid by concatenating the robot name and the object's unique name. Example: husky1_people02.
-    - If the object message uid is not unique, ATAK treats this message as an update to the existing object's location.
+---
 
-## WARNING:  
-The nodes that convert between UTM and LL are not tested for navigation across UTM zones. This code is intended for development and testing of robots in a single UTM zone. It is not tested in situations where the robot crosses UTM zones.    
+# ATAK Bridge Repository
 
-#### Example usage
-To use atak-bridge it is typical to write one or two new nodes that are robot specific. These would serve two purposes:
-1. From the robot acquire the location and class name for each object of interest and publish it to the atak_bridge in as a list of objects in a atak_bridge/PoseDescriptionArray message type.
-2. From the atak_bridge acquires a go to goal location with optional heading and optional altitude. This information is sent to the robot using robot specific methods. The atak_bridge publishes the go to goal as a message of type atak_bridge/PoseDescriptionStamped. 
-3. To run test code with a simulated robot:  
-    - `roslaunch atak_bridge test_tak_bridge.launch`  
-4. To run this with another robot:  
-    - `roslaunch atak_bridge plugin_tak_bridge.launch`
-    - run the nodes that communicate with the atak_bridge.  
-    - NOTE: atak_bridge requires a transform from utm to base_link frame. To run this with your robot make sure this requirement is met. There is an example in the launch file on how to do this with a static transform publisher. 
+This repository provides tools to facilitate communication between ATAK (Android Team Awareness Kit) and robots. It includes components for listening to ATAK messages, processing them, and plotting paths based on received data.
 
-#### Parameters
-- `name` (string, default: 'warty')  
-    Used to namespace topics  
-- `callsign` (string, default: 'default_callsign')  
-    The call sign used by this system to identify itself on TAK.   
-- `team_name` (string, default: 'Cyan')  
-    This system's team name. This should align with ATAK teams, usually colors.  
-- `team_role` (string, default: 'Team Member')  
-    This system's role in the team. This should align with team roles.  
-- `tak_ip` (string, default: '127.0.0.1')  
-    The IP address of the server  
-- `tak_port` (string, default: '8088')  
-    The port for an unsecure connection to the server.
-- `baselink_frame` (string, default: 'base_link')  
-    The name of the frame that as at the base of the robot.
-- `map_frame` (string, default: 'map')  
-    The global frame that is converted to Lat/Long before being sent/received from the ATAK server. Usually 'warty/map'
-- `robot_msg_uid` (string, default: 'warty1_goto')  
-    Used to identify ATAK Messages that are meant for this robot. The robot ignores all incoming atak messages that do not match this string.
+---
 
-#### Published Topics
-- `~/goal_location` (atak_msgs/PoseDescriptionStamped): The location that the ATAK system is requesting the robot to move to. This can include orientation and altitude if desired. Current location in latitude, longitude, and altitude that an ATAK system is requesting the robot to move to. The pose is published with a frame_id of UTM. The Description is used to identify if the message is intended for this robot.
+## Table of Contents
+1. Dependencies
+2. Installation
+3. How to Run
+   - Running `atak_listener`
+   - Running `plot_path`
+4. File Structure
 
-#### Subscribed Topics
-- `~/object_locations` (atak_msgs/PoseDescriptionArray): This is a list of object locations and descriptions that should be displayed to ATAK users. This message uses a single header timestamp and frame_id for all objects. It assumed this a list that only contains the objects to be displayed in ATAK, this is typically not all the detected objects. The robot node that publishes this information to the atak_bridge should filter out the unwanted objects. The atak_bridge test_robot.py file has an example of doing this with a python list of desired objects.
+---
 
-#### Custom Messages
-The atak_bridge uses custom message types to send a position and description of that position in a single message. Below are the message definitions and block diagram can be found at: [Communication Block Diagram](https://github.com/westpoint-robotics/atak_bridge/blob/master/docs/ATAK_Plugin.pdf)
+## Dependencies
 
-**atak_bridge/PoseDescription**  
-&emsp;`geometry_msgs/Pose` pose  
-&emsp;`std_msgs/String` description  
+Before running the programs, ensure you have the following dependencies installed:
 
-**atak_bridge/PoseDescriptionStamped**  
-&emsp;`std_msgs/Header` header  
-&emsp;`atak_bridge/PoseDescription` pose  
-&emsp;&emsp;`geometry_msgs/Pose` pose  
-&emsp;&emsp;`std_msgs/String` description  
-    
-**atak_bridge/PoseDescriptionArray**  
-&emsp;`std_msgs/Header` header  
-&emsp;`atak_bridge/PoseDescription[]` pose_list  
-&emsp;&emsp;`geometry_msgs/Pose` pose  
-&emsp;&emsp;`std_msgs/String` description  
+### System Requirements
+- **Operating System**: Linux (tested on Ubuntu)
+- **Python Version**: Python 3.x (tested on Python 3.8+)
+- **ROS Version**: ROS Noetic (or compatible version)
 
-# DEV Notes
+### Python Packages
+Install the required Python packages using `pip`:
+```bash
+pip install -r requirements.txt
+```
 
-## Identification Clarification Needed. It is not allways clear what "uid" is.
+If a `requirements.txt` file is not available, install the following packages manually:
+```bash
+pip install pandas tkinter opencv-python simplekml
+```
 
-### ATAK 
-- Every event in ATAK has an **uid** (unique identifier). ATAK events require an **uid** that is a "globally unique name for this information on this event" 
-- In a CoT message a sub-schema may appear in the 'detail' element. In the 'detail' element a **uid** sub element exists that "provides a place to annotate a CoT message with the unique identifier used by a particular system". 
-- In CoT documentation the acronym **uid** seems to mean one of two things either **unique identifier** or **user identifier**.
+### ROS Packages
+Ensure the following ROS packages are installed:
+- `rospy`
+- `tf`
+- `geometry_msgs`
+- `visualization_msgs`
+- `nav_msgs`
 
-### Use cases
-1. An ATAK user wishes a robot to follow a route. 
-    - The user draws a route on his ATAK interface using the ATAK Route Tool.
-    - The user adds the robot's callsign to the Route Name field by selecting the route name and typing the robot name into the end of the existing route name.
-    - The user then use the send button to send it to the atak_bridge.
-    - The atak_bridge code converts it to a ROS nav_msg/Path and publishes it.
-    - Questions:
-        1. How to handle orientation at waypoints and end point? ATAK routes do not change orientation.
-        2. How to handle altitude at waypoints and end point? ATAK routes do not change altitude.
+### Additional Dependencies
+- **pytak**: Install the latest version of `pytak` for ATAK communication:
+  ```bash
+  pip install pytak
+  ```
+- **SSL Certificates**: Ensure you have valid SSL certificates (`user2.pem`, user2.key) in the repository.
+
+---
+
+## Installation
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/your-repo/atak_bridge.git
+   cd atak_bridge
+   ```
+
+2. Install the Python dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. Install ROS dependencies:
+   ```bash
+   sudo apt-get install ros-noetic-tf ros-noetic-geometry-msgs ros-noetic-visualization-msgs ros-noetic-nav-msgs
+   ```
+
+4. Ensure the SSL certificates (`user2.pem`, user2.key) are in the repository's root directory.
+
+---
+
+## How to Run
+
+### Running `atak_listener`
+
+The `atak_listener` listens for messages from ATAK and processes them into CSV files. It also provides a GUI for monitoring received data.
+
+#### Steps to Run:
+1. Launch a ROS core:
+   ```bash
+   roscore
+   ```
+
+2. Run the `atak_listener`:
+   ```bash
+   roslaunch atak_bridge atak_listener.py
+   ```
+
+3. GUI Instructions:
+   - Click the **Start** button to begin listening for messages.
+   - The GUI will display counts and coordinates for Fly zones, NoFly zones, Start points, and End points.
+   - Click the **End** button to stop the program and combine the CSV files into `User_input_total.csv`.
+
+#### Output:
+- The following CSV files will be generated:
+  - `start_point.csv`: Contains the start point.
+  - `fly_zones.csv`: Contains Fly zones.
+  - `nofly_zones.csv`: Contains NoFly zones.
+  - `end_point.csv`: Contains the end point.
+  - `User_input_total.csv`: Combines all the above files with separation lines.
+
+---
+
+### Running `plot_path`
+
+The `plot_path` script reads a CSV file containing latitude and longitude points and sends them as CoT (Cursor on Target) messages to the ATAK server.
+
+#### Steps to Run:
+1. Ensure the Output_Path.csv file exists in the takpak directory. This file should contain the path points in the format:
+   ```csv
+   Latitude, Longitude
+   41.3906814186454,-73.9529146243604
+   41.3906821237462,-73.9529153685257
+   ...
+   ```
+
+2. Run the `plot_path` script:
+   ```bash
+   roslaunch atak_bridge plot_path.py
+   ```
+
+3. The script will send the points in Output_Path.csv to the ATAK server as CoT messages.
+
+---
+
+## File Structure
+
+```
+atak_bridge/
+├── atak_bridge_basestation.py
+├── atak_bridge_node.py
+├── LatLongUTMconversion.py
+├── map_converter.py
+├── map_server.py
+├── takpak/
+│   ├── atak_listener.py
+│   ├── cmdvel_drive.py
+│   ├── end_point.csv
+│   ├── fly_zones.csv
+│   ├── mkcot.py
+│   ├── nofly_zones.csv
+│   ├── open.py
+│   ├── Output_Path.csv
+│   ├── plot_path.py
+│   ├── start_point.csv
+│   ├── takcot.py
+│   ├── User_input_total.csv
+│   └── README.md
+├── test_robot.py
+├── user2.key
+├── user2.pem
+└── README.md
+```
