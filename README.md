@@ -28,23 +28,12 @@ Before running the programs, ensure you have the following dependencies installe
 - **ROS Version**: ROS Noetic (or compatible version)
 
 ### Python Packages
-Install the required Python packages using `pip`:
-```bash
-pip install -r requirements.txt
-```
 
-If a `requirements.txt` file is not available, install the following packages manually:
+Install the following packages manually:
 ```bash
 pip install pandas tkinter opencv-python simplekml
 ```
 
-### ROS Packages
-Ensure the following ROS packages are installed:
-- `rospy`
-- `tf`
-- `geometry_msgs`
-- `visualization_msgs`
-- `nav_msgs`
 
 ### Additional Dependencies
 - **pytak**: Install the latest version of `pytak` for ATAK communication:
@@ -59,21 +48,17 @@ Ensure the following ROS packages are installed:
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/your-repo/atak_bridge.git
+   git clone https://github.com/westpoint-robotics/atak_bridge.git
+   git checkout MineSweeper-Branch
    cd atak_bridge
    ```
 
-2. Install the Python dependencies:
+2. Install ROS dependencies:
    ```bash
-   pip install -r requirements.txt
+   sudo rosdep install --from-paths src --ignore-src
    ```
 
-3. Install ROS dependencies:
-   ```bash
-   sudo apt-get install ros-noetic-tf ros-noetic-geometry-msgs ros-noetic-visualization-msgs ros-noetic-nav-msgs
-   ```
-
-4. Ensure the SSL certificates (`user2.pem`, user2.key) are in the repository's root directory.
+3. Ensure the SSL certificates (`user2.pem`, user2.key) are in the repository's root directory.
 
 ---
 
@@ -86,11 +71,12 @@ The `atak_listener` listens for messages from ATAK and processes them into CSV f
 #### Steps to Run:
 Make sure to source the workspace if you make any changes
 ```bash
+cd 
 source devel/setup.bash
  ```
 1. Run the `atak_listener`:
    ```bash
-   roslaunch atak_bridge atak_listener.py
+   roslaunch atak_bridge atak_listener.launch
    ```
 
 2. GUI Instructions:
@@ -123,7 +109,7 @@ The `plot_path` script reads a CSV file containing latitude and longitude points
 
 2. Run the `plot_path` script:
    ```bash
-   roslaunch atak_bridge plot_path.py
+   roslaunch atak_bridge plot_path.launch
    ```
 
 3. The script will send the points in Output_Path.csv to the ATAK server as CoT messages.
