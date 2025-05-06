@@ -71,7 +71,7 @@ The `atak_listener` listens for messages from ATAK and processes them into CSV f
 #### Steps to Run:
 Make sure to source the workspace if you make any changes
 ```bash
-cd 
+cd catkin_ws (to the source of the workspace)
 source devel/setup.bash
  ```
 1. Run the `atak_listener`:
